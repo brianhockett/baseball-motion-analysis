@@ -1,0 +1,3 @@
+data/c3d_files/
+*.parquet
+pca/animations/
