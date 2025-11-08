@@ -1,3 +1,5 @@
 data/c3d_files/
 *.parquet
-pca/animations/
+*.joblib
+*.mp4
+*.json

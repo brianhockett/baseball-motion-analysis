@@ -55,7 +55,7 @@ for file in os.listdir(data_dir):
                 data.append([
                     userID, sessionID, height, weight,
                     pitchNum, pitchType, pitchSpeed,
-                    frame, marker_id, x, y, z, residual
+                    frame, marker_id, x, y, z
                 ])
 
         print(f"File {file_number}/{total_files} loaded into parquet file")
@@ -67,7 +67,7 @@ df = pd.DataFrame(
     columns=[
         'userID','sessionID','height','weight',
         'pitchNum','pitchType','pitchSpeed',
-        'frame','markerID','x','y','z','residual'
+        'frame','markerID','x','y','z'
     ]
 )
 
