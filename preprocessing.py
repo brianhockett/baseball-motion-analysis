@@ -60,9 +60,18 @@ data = data.merge(
     how = "left"
 )
 
-print("Mirroring left-handed pitchers about they y-axis")
+def swap_lr(label):
+    if label.startswith("L"):
+        return "R" + label[1:]
+    if label.startswith("R"):
+        return "L" + label[1:]
+    return label
+
+print("Mirroring left-handed pitchers about the y-axis")
 # Mirror lefties about the y-axis -- Now every pitcher is treated as being the same handedness (right-handed)
-data.loc[data['p_throws'] == 'L', 'y'] *= -1
+mask = data["p_throws"] == "L"
+data.loc[mask, 'y'] *= -1
+data.loc[mask, "markerID"] = data.loc[mask, "markerID"].apply(swap_lr)
 
 print("Removing markers that are not present in every pitch")
 # Identify unique markers per pitch

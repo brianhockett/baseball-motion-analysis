@@ -117,12 +117,12 @@ def plot_diffs(merged, poi_to_color, poi_to_pcs, poi_records):
     plt.savefig("./plots/diff_plot.png")
     plt.show()
 
-def plot_pc_contribution_skeleton(marker_contrib, pc):
+def plot_pc_contribution_skeleton(marker_contrib, pc, show_labels = False):
     # Marker list
     markers = ['C7', 'CLAV', 'LANK', 'LASI', 'LBHD', 'LELB', 'LFHD', 'LFIN',
         'LFRM', 'LHEE', 'LKNE', 'LMANK', 'LMELB', 'LMKNE', 'LPSI', 'LSHO',
         'LTHI', 'LTIB', 'LTOE', 'LUPA', 'LWRA', 'LWRB', 'RANK', 'RASI',
-        'RBAK', 'RBHD', 'RELB', 'RFHD', 'RFIN', 'RFRM', 'RHEE', 'RKNE',
+        'RBHD', 'RELB', 'RFHD', 'RFIN', 'RFRM', 'RHEE', 'RKNE',
         'RMANK', 'RMELB', 'RMKNE', 'RPSI', 'RSHO', 'RTHI', 'RTIB', 'RTOE',
         'RUPA', 'RWRA', 'RWRB', 'STRN', 'T10']
 
@@ -171,7 +171,6 @@ def plot_pc_contribution_skeleton(marker_contrib, pc):
     points[:, marker_to_idx['LPSI']] = [0.2, -0.01, 0.95]
     points[:, marker_to_idx['RPSI']] = [-0.2, -0.01, 0.95]
     points[:, marker_to_idx['T10']] = [0, 0, 1.3]
-    points[:, marker_to_idx['RBAK']] = [-0.1, -0.05, 1.35]
 
     # Legs
     points[:, marker_to_idx['LTHI']] = [0.2, 0, 0.6]
@@ -288,7 +287,6 @@ def plot_pc_contribution_skeleton(marker_contrib, pc):
     cbar = plt.colorbar(scatter, ax=ax, label='Normalized Contribution')
 
     # Optionally add marker labels
-    show_labels = False
     if show_labels:
         for m in markers:
             idx = marker_to_idx[m]
