@@ -1,5 +1,6 @@
 import ezc3d
 import pandas as pd
+import polars as pl
 import os
 import json
 import numpy as np
@@ -62,18 +63,21 @@ for file in os.listdir(data_dir):
         file_number += 1
 
 # Create DataFrame
-df = pd.DataFrame(
+df = pl.DataFrame(
     data,
-    columns=[
+    schema=[
         'userID','sessionID','height','weight',
         'pitchNum','pitchType','pitchSpeed',
         'frame','markerID','x','y','z'
-    ]
+    ],
+    orient='row'
 )
 
 # Fix pitchSpeed to be in mph
-df["pitchSpeed"] = pd.to_numeric(df["pitchSpeed"], errors='coerce') / 10
-df.to_parquet('./data/pitching_data.parquet', index=False)
+df = df.with_columns(
+    pitchSpeed = (pl.col("pitchSpeed").cast(pl.Float64, strict=False) / 10)
+)
+df.write_parquet('./data/pitching_data.parquet')
 print(f"Saved DataFrame to './data/pitching_data.parquet', total rows: {len(df)}")
 
 with open('./data/pitch_marker_mapping.json', 'w') as f:
