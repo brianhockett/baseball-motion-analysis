@@ -180,8 +180,8 @@ def animate(sel, animation_type = 'real', name = None):
 
     print("Saving animation... please wait.")
     if animation_type == 'real':
-        ani.save(f'./pca/animations/{animation_type}/{userID}_{sessionID}_{pitchNum}.mp4', writer ='ffmpeg', fps = 60)
+        ani.save(f'./animations/{animation_type}/{userID}_{sessionID}_{pitchNum}.mp4', writer ='ffmpeg', fps = 60)
         print(f"Animation saved as {userID}_{sessionID}_{pitchNum}.mp4")
     else:
-        ani.save(f'./pca/animations/{animation_type}/{name}.mp4', writer ='ffmpeg', fps = 60)
+        ani.save(f'./animations/{animation_type}/{name}.mp4', writer ='ffmpeg', fps = 60)
         print(f"Animation saved as {name}.mp4")
