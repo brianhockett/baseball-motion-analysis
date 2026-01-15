@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PCA Sigma Viewer</title>
+<style>
+  /* --- MODERN DARK THEME CSS --- */
+  body { 
+    margin: 0; 
+    overflow: hidden; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    background-color: #1a1a1a; 
+    color: #eee;
+  }
+  
+  #ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 260px;
+    max-height: 85vh;
+    overflow-y: auto;
+    
+    /* Glassmorphism Effect */
+    background: rgba(30, 30, 35, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    
+    /* Scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: #555 transparent;
+  }
+
+  /* Custom Scrollbar for Webkit */
+  #ui::-webkit-scrollbar { width: 6px; }
+  #ui::-webkit-scrollbar-track { background: transparent; }
+  #ui::-webkit-scrollbar-thumb { background-color: #555; border-radius: 10px; }
+
+  h3 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 10px;
+  }
+
+  .control-group {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #aaa;
+  }
+  
+  .value-display {
+    color: #00ffff; /* Neon Cyan text */
+    font-family: monospace;
+  }
+
+  /* Custom Slider Styling */
+  .slider { 
+    -webkit-appearance: none;
+    width: 100%; 
+    height: 4px;
+    background: #444;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #00ffff;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+    transition: transform 0.1s;
+  }
+  
+  .slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  .slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #00ffff;
+    cursor: pointer;
+    border: none;
+  }
+
+  #loading {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+    letter-spacing: 1px;
+    color: #888;
+    background: rgba(0,0,0,0.8);
+    padding: 20px 40px;
+    border-radius: 8px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="ui"></div>
+<div id="loading">Loading PCA Data...</div>
+
+<script type="module">
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158/+esm';
+  import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/controls/OrbitControls.js/+esm';
+
+  async function init() {
+
+    // --- 1. SETUP IMPROVED SCENE ---
+    const scene = new THREE.Scene();
+    
+    // Dark Studio Background (No Fog)
+    const bgColor = new THREE.Color(0x111111); 
+    scene.background = bgColor;
+
+    // --- LIGHTING ---
+    // Hemisphere light (Sky vs Ground color)
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.7);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
+
+    // Directional light (The "Sun" - casts shadows)
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(3, 10, 5);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    // --- FLOOR ---
+    // Brighter Grid: Center line is white, grid lines are lighter gray
+    const gridHelper = new THREE.GridHelper(10, 20, 0xffffff, 0x555555);
+    gridHelper.position.y = 0; 
+    gridHelper.rotation.x = Math.PI / 2;
+    scene.add(gridHelper);
+
+    // --- CAMERA & RENDERER ---
+    const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
+    camera.position.set(0, 1.2, 3.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true; 
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 0.9, 0);
+    controls.update();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- LOAD DATA ---
+    let PCA;
+    try {
+        const res = await fetch("pca_data.json");
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        PCA = await res.json();
+        document.getElementById('loading').style.display = 'none';
+    } catch (e) {
+        console.error(e);
+        const ld = document.getElementById('loading');
+        ld.textContent = "Error loading pca_data.json";
+        ld.style.color = "#ff4444";
+        return;
+    }
+
+    const { X_mean, V, Lambda, feature_names, marker_labels, n_frames } = PCA;
+    const K = Lambda.length;
+
+    // --- PROCESS CONNECTIONS ---
+    const markerIndex = {};
+    marker_labels.forEach((m, i) => markerIndex[m] = i);
+
+    const skeleton_connections_labels = [
+      ["LBHD","LFHD"], ["RBHD","RFHD"], ["LFHD","RFHD"], ["LBHD","RBHD"],
+      ["C7","STRN"], ["C7","CLAV"], ["STRN","CLAV"], ["CLAV","LSHO"], ["CLAV","RSHO"], ["LSHO","RSHO"],
+      ["LSHO","LASI"], ["RSHO","RASI"], ["LASI","RASI"], ["LPSI","RPSI"], ["LASI","LPSI"], ["RASI","RPSI"],
+      ["LSHO","LUPA"], ["LUPA","LELB"], ["LELB","LFRM"], ["LFRM","LWRA"], ["LWRA","LWRB"], ["LWRB","LFIN"],
+      ["RSHO","RUPA"], ["RUPA","RELB"], ["RELB","RFRM"], ["RFRM","RWRA"], ["RWRA","RWRB"], ["RWRB","RFIN"],
+      ["LASI","LTHI"], ["LTHI","LKNE"], ["LKNE","LTIB"], ["LTIB","LANK"], ["LANK","LHEE"], ["LANK","LTOE"], ["LHEE","LTOE"], ["LANK","LMANK"],
+      ["RASI","RTHI"], ["RTHI","RKNE"], ["RKNE","RTIB"], ["RTIB","RANK"], ["RANK","RHEE"], ["RANK","RTOE"], ["RHEE","RTOE"], ["RANK","RMANK"]
+    ];
+
+    const skeleton_connections = skeleton_connections_labels
+      .map(([a,b]) => [markerIndex[a], markerIndex[b]])
+      .filter(pair => pair.every(i => i !== undefined));
+
+    // --- CREATE 3D OBJECTS ---
+    const markerMeshes = [];
+    
+    // High-Vis Neon Material
+    const sphereGeometry = new THREE.SphereGeometry(0.018, 24, 24);
+    const sphereMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x00ffff,        // Bright Cyan
+        emissive: 0x00ffff,     // Self-illuminated
+        emissiveIntensity: 0.7, // High intensity glow
+        roughness: 0.2,
+        metalness: 0.1
+    });
+
+    marker_labels.forEach(() => {
+      const m = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      m.castShadow = true; 
+      scene.add(m);
+      markerMeshes.push(m);
+    });
+
+    // Brighter Skeleton Lines
+    const lineMaterial = new THREE.LineBasicMaterial({ 
+        color: 0xcccccc, // Very light grey/white lines
+        opacity: 0.6,
+        transparent: true,
+        linewidth: 1 
+    });
+
+    const skeletonLines = skeleton_connections.map(([i,j]) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
+      const l = new THREE.Line(g, lineMaterial);
+      scene.add(l);
+      return { line: l, i, j };
+    });
+
+    // Pre-parse feature map
+    const featureMap = feature_names.map(name => {
+      const parts = name.split("_");
+      return {
+        axis: parts[0], 
+        frame: parseInt(parts[2]), 
+        markerIndex: markerIndex[parts[1]]
+      };
+    });
+
+    // --- RECONSTRUCTION LOGIC ---
+    let sigmas = new Array(K).fill(0);
+    const currentX = new Array(X_mean.length).fill(0);
+
+    function reconstruct(frameIndex) {
+      // 1. Calculate Pose
+      for (let i = 0; i < X_mean.length; i++) {
+        let val = X_mean[i];
+        for (let k = 0; k < K; k++) {
+          val += sigmas[k] * Math.sqrt(Lambda[k]) * V[i][k];
+        }
+        currentX[i] = val;
+      }
+
+      // 2. Update Markers
+      for(let f = 0; f < featureMap.length; f++) {
+        const feat = featureMap[f];
+        if (feat.frame === frameIndex) {
+             const m = markerMeshes[feat.markerIndex];
+             if (m) m.position[feat.axis] = currentX[f];
+        }
+      }
+
+      // 3. Update Lines
+      for(let k=0; k < skeletonLines.length; k++) {
+          const { line, i, j } = skeletonLines[k];
+          const positions = line.geometry.attributes.position.array;
+          const a = markerMeshes[i].position;
+          const b = markerMeshes[j].position;
+          
+          positions[0] = a.x; positions[1] = a.y; positions[2] = a.z;
+          positions[3] = b.x; positions[4] = b.y; positions[5] = b.z;
+          
+          line.geometry.attributes.position.needsUpdate = true;
+      }
+    }
+
+    // --- GENERATE UI ---
+    const ui = document.getElementById("ui");
+    
+    // Header
+    const header = document.createElement("h3");
+    header.textContent = "PCA Motion Control";
+    ui.appendChild(header);
+
+    sigmas.forEach((_, i) => {
+      const container = document.createElement("div");
+      container.className = "control-group";
+
+      const labelRow = document.createElement("div");
+      labelRow.className = "label-row";
+      
+      const name = document.createElement("span");
+      name.textContent = `Component ${i+1}`;
+      
+      const valDisplay = document.createElement("span");
+      valDisplay.className = "value-display";
+      valDisplay.textContent = "0.0";
+
+      labelRow.appendChild(name);
+      labelRow.appendChild(valDisplay);
+
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = -4;
+      slider.max = 4;
+      slider.step = 0.1;
+      slider.value = 0;
+      slider.className = "slider";
+
+      slider.oninput = (e) => {
+        const val = parseFloat(e.target.value);
+        sigmas[i] = val;
+        valDisplay.textContent = val.toFixed(1);
+      };
+
+      container.appendChild(labelRow);
+      container.appendChild(slider);
+      ui.appendChild(container);
+    });
+
+    // --- ANIMATION LOOP ---
+    let frame = 0;
+    
+    function animate() {
+      requestAnimationFrame(animate);
+      reconstruct(frame);
+      frame++;
+      if (frame >= n_frames) frame = 0;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  }
+
+  init();
+</script>
+</body>
+</html>
