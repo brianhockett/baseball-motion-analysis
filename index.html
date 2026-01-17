@@ -194,6 +194,11 @@
         return;
     }
 
+    let fps = 60;
+    let motionPercent = 100;
+    let lastFrameTime = 0;
+    let frame = 0;
+
     const { X_mean, V, Lambda, feature_names, marker_labels, n_frames } = PCA;
     const K = Lambda.length;
 
@@ -343,19 +348,160 @@
     });
 
     // --- ANIMATION LOOP ---
-    let frame = 0;
+    //let lastFrameTime = 0;
     
-    function animate() {
+    function animate(time) {
       requestAnimationFrame(animate);
-      reconstruct(frame);
-      frame++;
-      if (frame >= n_frames) frame = 0;
+
+      if (time - lastFrameTime > (1000 / fps)) {
+        reconstruct(Math.min(frame, n_frames - 1));
+        frame++;
+        if (frame > frameEnd) frame = frameStart;
+        lastFrameTime = time;
+    }
       controls.update();
       renderer.render(scene, camera);
     }
 
-    animate();
+    animate(0);
+
+    // FPS Control
+const fpsGroup = document.createElement("div");
+fpsGroup.className = "control-group";
+
+const fpsLabelRow = document.createElement("div");
+fpsLabelRow.className = "label-row";
+
+const fpsName = document.createElement("span");
+fpsName.textContent = "FPS";
+
+const fpsDisplay = document.createElement("span");
+fpsDisplay.className = "value-display";
+fpsDisplay.textContent = "60";
+
+fpsLabelRow.appendChild(fpsName);
+fpsLabelRow.appendChild(fpsDisplay);
+
+const fpsSlider = document.createElement("input");
+fpsSlider.type = "range";
+fpsSlider.min = "1";
+fpsSlider.max = "120";
+fpsSlider.step = "1";
+fpsSlider.value = "60";
+fpsSlider.className = "slider";
+
+fpsSlider.oninput = (e) => {
+  fps = parseInt(e.target.value);
+  fpsDisplay.textContent = fps.toString();
+};
+
+fpsGroup.appendChild(fpsLabelRow);
+fpsGroup.appendChild(fpsSlider);
+ui.appendChild(fpsGroup);
   }
+
+let frameStart = 0;
+let frameEnd = 100;
+
+// Motion Frame Range Control
+const motionGroup = document.createElement("div");
+motionGroup.className = "control-group";
+
+const motionLabelRow = document.createElement("div");
+motionLabelRow.className = "label-row";
+
+const motionName = document.createElement("span");
+motionName.textContent = "Frame Range";
+
+const motionDisplay = document.createElement("span");
+motionDisplay.className = "value-display";
+motionDisplay.textContent = "0-100";
+
+motionLabelRow.appendChild(motionName);
+motionLabelRow.appendChild(motionDisplay);
+
+motionGroup.appendChild(motionLabelRow);
+ui.appendChild(motionGroup);
+
+// Start Frame Slider
+const startGroup = document.createElement("div");
+startGroup.className = "control-group";
+
+const startLabelRow = document.createElement("div");
+startLabelRow.className = "label-row";
+
+const startName = document.createElement("span");
+startName.textContent = "Start";
+
+const startDisplay = document.createElement("span");
+startDisplay.className = "value-display";
+startDisplay.textContent = "0";
+
+startLabelRow.appendChild(startName);
+startLabelRow.appendChild(startDisplay);
+
+const startSlider = document.createElement("input");
+startSlider.type = "range";
+startSlider.min = "0";
+startSlider.max = "100";
+startSlider.step = "1";
+startSlider.value = "0";
+startSlider.className = "slider";
+
+startSlider.oninput = (e) => {
+  const val = parseInt(e.target.value);
+  if (val <= frameEnd) {
+    frameStart = val;
+    startDisplay.textContent = val;
+    motionDisplay.textContent = frameStart + "-" + frameEnd;
+  } else {
+    startSlider.value = frameStart;
+  }
+};
+
+startGroup.appendChild(startLabelRow);
+startGroup.appendChild(startSlider);
+ui.appendChild(startGroup);
+
+// End Frame Slider
+const endGroup = document.createElement("div");
+endGroup.className = "control-group";
+
+const endLabelRow = document.createElement("div");
+endLabelRow.className = "label-row";
+
+const endName = document.createElement("span");
+endName.textContent = "End";
+
+const endDisplay = document.createElement("span");
+endDisplay.className = "value-display";
+endDisplay.textContent = "100";
+
+endLabelRow.appendChild(endName);
+endLabelRow.appendChild(endDisplay);
+
+const endSlider = document.createElement("input");
+endSlider.type = "range";
+endSlider.min = "0";
+endSlider.max = "100";
+endSlider.step = "1";
+endSlider.value = "100";
+endSlider.className = "slider";
+
+endSlider.oninput = (e) => {
+  const val = parseInt(e.target.value);
+  if (val >= frameStart) {
+    frameEnd = val;
+    endDisplay.textContent = val;
+    motionDisplay.textContent = frameStart + "-" + frameEnd;
+  } else {
+    endSlider.value = frameEnd;
+  }
+};
+
+endGroup.appendChild(endLabelRow);
+endGroup.appendChild(endSlider);
+ui.appendChild(endGroup);
 
   init();
 </script>
