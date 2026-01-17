@@ -1,509 +1,703 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>PCA Sigma Viewer</title>
-<style>
-  /* --- MODERN DARK THEME CSS --- */
-  body { 
-    margin: 0; 
-    overflow: hidden; 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-    background-color: #232D4B; 
-    color: #eee;
-  }
-  
-  #ui {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 260px;
-    max-height: 85vh;
-    overflow-y: auto;
-    
-    /* Glassmorphism Effect */
-    background: rgba(35, 45, 75, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    
-    /* Scrollbar styling */
-    scrollbar-width: thin;
-    scrollbar-color: #555 transparent;
-  }
+    <meta charset="UTF-8">
+    <title>PCA & Real Pitch Motions</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0F172A;
+            color: #eee;
+        }
 
-  /* Custom Scrollbar for Webkit */
-  #ui::-webkit-scrollbar { width: 6px; }
-  #ui::-webkit-scrollbar-track { background: transparent; }
-  #ui::-webkit-scrollbar-thumb { background-color: #555; border-radius: 10px; }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 280px;
+            max-height: 85vh;
+            overflow-y: auto;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            scrollbar-width: thin;
+            scrollbar-color: #555 transparent;
+            z-index: 10;
+        }
 
-  h3 {
-    margin: 0 0 15px 0;
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    color: #fff;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding-bottom: 10px;
-  }
+        #ui::-webkit-scrollbar { width: 6px; }
+        #ui::-webkit-scrollbar-track { background: transparent; }
+        #ui::-webkit-scrollbar-thumb { background-color: #555; border-radius: 10px; }
 
-  .control-group {
-    margin-bottom: 16px;
-    display: flex;
-    flex-direction: column;
-  }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin: 20px 0 12px 0;
+            padding-bottom: 8px;
+        }
 
-  .label-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    margin-bottom: 6px;
-    font-weight: 500;
-    color: #aaa;
-  }
-  
-  .value-display {
-    color: #E57200; /* Neon Cyan text */
-    font-family: monospace;
-  }
+        h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #fff;
+        }
+        
+        .reset-link {
+            font-size: 10px;
+            color: #fff;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .reset-link:hover { opacity: 0.7; }
 
-  /* Custom Slider Styling */
-  .slider { 
-    -webkit-appearance: none;
-    width: 100%; 
-    height: 4px;
-    background: #444;
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
+        .mode-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
 
-  .slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #E57200;
-    cursor: pointer;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
-    transition: transform 0.1s;
-  }
-  
-  .slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
-  .slider::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #E57200;
-    cursor: pointer;
-    border: none;
-  }
+        .mode-btn {
+            padding: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
 
-  #loading {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 18px;
-    letter-spacing: 1px;
-    color: #888;
-    background: rgba(0,0,0,0.8);
-    padding: 20px 40px;
-    border-radius: 8px;
-    pointer-events: none;
-  }
-</style>
+        .mode-btn:hover {
+            background: rgba(229, 114, 0, 0.3);
+            border-color: #E57200;
+        }
+
+        .mode-btn.active {
+            background: #E57200;
+            border-color: #E57200;
+            color: #000;
+        }
+
+        .control-group {
+            margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #aaa;
+            text-transform: uppercase;
+        }
+
+        .value-display {
+            color: #E57200;
+            font-family: monospace;
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .view-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .view-btn:hover {
+            background: #E57200;
+            border-color: #E57200;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #444;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #E57200;
+            cursor: pointer;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        select option {
+            background: #1a2332;
+            color: #fff;
+        }
+
+        .range-slider-wrapper {
+            position: relative;
+            height: 20px;
+            margin-top: 5px;
+        }
+
+        .dual-input {
+            position: absolute;
+            width: 100%;
+            pointer-events: none;
+            -webkit-appearance: none;
+            background: none;
+            top: 0;
+            left: 0;
+        }
+
+        .dual-input::-webkit-slider-thumb {
+            pointer-events: auto;
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #E57200;
+            cursor: pointer;
+        }
+
+        .range-track {
+            position: absolute;
+            top: 5px;
+            width: 100%;
+            height: 4px;
+            background: #444;
+            border-radius: 2px;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: #888;
+            background: rgba(0,0,0,0.8);
+            padding: 20px 40px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
 <body>
 
-<div id="ui"></div>
-<div id="loading">Loading PCA Data...</div>
+<div id="ui">
+    <div class="mode-buttons">
+        <button class="mode-btn active" id="pca-mode-btn" onclick="setMode('pca')">PCA</button>
+        <button class="mode-btn" id="real-mode-btn" onclick="setMode('real')">Real</button>
+    </div>
+
+    <div id="pca-section">
+        <div class="section-header">
+            <h3>PCA Motion Control</h3>
+            <span class="reset-link" onclick="resetPCA()">Reset</span>
+        </div>
+        <div id="pca-sliders-container"></div>
+    </div>
+
+    <div id="real-section" class="hidden">
+        <div class="section-header">
+            <h3>Pitch Selection</h3>
+        </div>
+        
+        <div class="control-group">
+            <label style="font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 6px;">User ID</label>
+            <select id="user-select" onchange="updatePitchFilters()">
+                <option value="">-- All Users --</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label style="font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 6px;">Select Pitch</label>
+            <select id="pitch-select" onchange="onPitchSelect()">
+                <option value="">-- Select a pitch --</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="camera-section">
+        <div class="section-header">
+            <h3>Camera Views</h3>
+        </div>
+        <div class="button-row">
+            <button class="view-btn" onclick="setView('front')">Front</button>
+            <button class="view-btn" onclick="setView('side')">Side</button>
+            <button class="view-btn" onclick="setView('back')">Back</button>
+            <button class="view-btn" onclick="setView('perspective')">Perspective</button>
+        </div>
+    </div>
+
+    <div id="playback-section">
+        <div class="section-header">
+            <h3>Playback & Speed</h3>
+        </div>
+        <div class="control-group">
+            <div class="label-row">
+                <span>FPS</span>
+                <span id="fps-display" class="value-display">60</span>
+            </div>
+            <input type="range" id="fps-slider" class="slider" min="1" max="120" value="60" onchange="updateFPS()">
+        </div>
+
+        <div class="control-group" id="frame-range-control">
+            <div class="label-row">
+                <span>Frame Range</span>
+                <span id="range-display" class="value-display">0 - 100</span>
+            </div>
+            <div class="range-slider-wrapper">
+                <div class="range-track"></div>
+                <input type="range" id="range-start" class="dual-input" min="0" max="100" value="0" onchange="updateRange()">
+                <input type="range" id="range-end" class="dual-input" min="0" max="100" value="100" onchange="updateRange()">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loading">Loading Data...</div>
 
 <script type="module">
-  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158/+esm';
-  import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/controls/OrbitControls.js/+esm';
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158/+esm';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/controls/OrbitControls.js/+esm';
 
-  async function init() {
+    let mode = 'pca';
+    let PCA = null, REAL_DATA = null, MARKER_MAPPING = null;
+    let sigmas = [], fps = 60, lastFrameTime = 0, frame = 0, frameStart = 0, frameEnd = 100;
+    const markerMeshes = [], skeletonLines = [];
+    let featureMap = [];
+    let currentRealPitch = null;
 
-    // --- 1. SETUP IMPROVED SCENE ---
     const scene = new THREE.Scene();
-    
-    // Dark Studio Background (No Fog)
-    const bgColor = new THREE.Color(0x232D4B); 
-    scene.background = bgColor;
+    scene.background = new THREE.Color(0x0F172A);
+    const modelGroup = new THREE.Group();
+    scene.add(modelGroup);
 
-    // --- LIGHTING ---
-    // Hemisphere light (Sky vs Ground color)
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.7);
-    hemiLight.position.set(0, 20, 0);
-    scene.add(hemiLight);
-
-    // Directional light (The "Sun" - casts shadows)
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    dirLight.position.set(3, 10, 5);
-    dirLight.castShadow = true;
-    scene.add(dirLight);
-
-    // --- FLOOR ---
-    // Brighter Grid: Center line is white, grid lines are lighter gray
-    const gridHelper = new THREE.GridHelper(10, 20, 0xffffff, 0x555555);
-    gridHelper.position.y = 0; 
-    gridHelper.rotation.x = Math.PI / 2;
-    scene.add(gridHelper);
-
-    // --- CAMERA & RENDERER ---
-    const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
-    camera.position.set(0, 1.2, 3.5);
+    const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.01, 100);
+    camera.position.set(3.5, 2.04, 3.5);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.shadowMap.enabled = true; 
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
+    controls.enableDamping = true; 
+    controls.dampingFactor = 0.1;
     controls.target.set(0, 0.9, 0);
-    controls.update();
+    controls.maxPolarAngle = Math.PI / 1.6;
+    controls.minDistance = 1;
+    controls.maxDistance = 10;
 
-    window.addEventListener('resize', () => {
+    window.setView = function(view) {
+        const d = 3.5, h = 1.2;
+        switch(view) {
+            case 'front': camera.position.set(1.25*d, h, 0); break;
+            case 'side': camera.position.set(0, 1.25*h, d); break;
+            case 'back': camera.position.set(-1.25*d, h, 0); break;
+            case 'perspective': camera.position.set(d, h*1.7, d); break;
+        }
+        controls.update();
+    };
+
+    window.setMode = function(newMode) {
+        mode = newMode;
+        document.getElementById('pca-mode-btn').classList.toggle('active', mode === 'pca');
+        document.getElementById('real-mode-btn').classList.toggle('active', mode === 'real');
+        document.getElementById('pca-section').classList.toggle('hidden', mode !== 'pca');
+        document.getElementById('real-section').classList.toggle('hidden', mode !== 'real');
+        frame = frameStart;
+        lastFrameTime = 0;
+    };
+
+    window.resetPCA = function() {
+        sigmas.fill(0);
+        const container = document.getElementById("pca-sliders-container");
+        const sliders = container.querySelectorAll('input');
+        const displays = container.querySelectorAll('.value-display');
+        sliders.forEach(function(s) { s.value = 0; });
+        displays.forEach(function(d) { d.textContent = "0.0"; });
+    };
+
+    window.updateFPS = function() {
+        fps = parseInt(document.getElementById("fps-slider").value);
+        document.getElementById("fps-display").textContent = fps;
+    };
+
+    window.updateRange = function() {
+        const rStart = parseInt(document.getElementById("range-start").value);
+        const rEnd = parseInt(document.getElementById("range-end").value);
+        frameStart = Math.min(rStart, rEnd);
+        frameEnd = Math.max(rStart, rEnd);
+        document.getElementById("range-display").textContent = frameStart + " - " + frameEnd;
+    };
+
+    window.updatePitchFilters = function() {
+        if (!REAL_DATA) return;
+        
+        const selectedUser = document.getElementById('user-select').value;
+
+        const filteredPitches = REAL_DATA.filter(function(pitch) {
+            const pitchUser = pitch.id.split('_')[0];
+            const userMatch = !selectedUser || pitchUser === selectedUser;
+            return userMatch;
+        });
+
+        const pitchSelect = document.getElementById('pitch-select');
+        pitchSelect.innerHTML = '<option value="">-- Select a pitch --</option>';
+        filteredPitches.forEach(function(pitch) {
+            const opt = document.createElement('option');
+            opt.value = pitch.id;
+            
+            // Extract velocity from label which has format "U:XXX S:XXX P:XXX (TYPE @ VELmph)"
+            const labelMatch = pitch.label.match(/@\s*([\d.]+)mph/);
+            const vel = labelMatch ? parseFloat(labelMatch[1]) : 0;
+            const velStr = vel.toFixed(1);
+            
+            // Update label with formatted velocity
+            const parts = pitch.label.split(' @ ');
+            const newLabel = parts[0] + ' @ ' + velStr + 'mph)';
+            opt.textContent = newLabel;
+            pitchSelect.appendChild(opt);
+        });
+    };
+
+    window.onPitchSelect = function() {
+        const pitchId = document.getElementById('pitch-select').value;
+        if (!pitchId || !REAL_DATA) return;
+        
+        currentRealPitch = REAL_DATA.find(function(p) { return p.id === pitchId; });
+        if (currentRealPitch) {
+            frameStart = 0;
+            frameEnd = currentRealPitch.max_frames - 1;
+            frame = frameStart;
+            lastFrameTime = 0;
+            
+            const rStart = document.getElementById("range-start");
+            const rEnd = document.getElementById("range-end");
+            rStart.max = rEnd.max = frameEnd;
+            rStart.value = frameStart;
+            rEnd.value = frameEnd;
+            document.getElementById("range-display").textContent = frameStart + " - " + frameEnd;
+        }
+    };
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(3, 10, 5);
+    scene.add(dirLight);
+
+    const grid = new THREE.GridHelper(10, 20, 0xffffff, 0x555555);
+    grid.material.transparent = true;
+    grid.material.opacity = 0.25;
+    scene.add(grid);
+
+    const connections = [["LBHD","LFHD"],["RBHD","RFHD"],["LFHD","RFHD"],["LBHD","RBHD"],["C7","STRN"],["C7","CLAV"],["STRN","CLAV"],["CLAV","LSHO"],["CLAV","RSHO"],["LSHO","RSHO"],["LSHO","LASI"],["RSHO","RASI"],["LASI","RASI"],["LPSI","RPSI"],["LASI","LPSI"],["RASI","RPSI"],["LSHO","LUPA"],["LUPA","LELB"],["LELB","LFRM"],["LFRM","LWRA"],["LWRA","LWRB"],["LWRB","LFIN"],["RSHO","RUPA"],["RUPA","RELB"],["RELB","RFRM"],["RFRM","RWRA"],["RWRA","RWRB"],["RWRB","RFIN"],["LASI","LTHI"],["LTHI","LKNE"],["LKNE","LTIB"],["LTIB","LANK"],["LANK","LHEE"],["LANK","LTOE"],["LHEE","LTOE"],["LANK","LMANK"],["RASI","RTHI"],["RTHI","RKNE"],["RKNE","RTIB"],["RTIB","RANK"],["RANK","RHEE"],["RANK","RTOE"],["RHEE","RTOE"],["RANK","RMANK"]];
+
+    async function initPCA() {
+        try {
+            const res = await fetch("pca_data.json");
+            PCA = await res.json();
+        } catch (e) {
+            console.error("Error loading pca_data.json", e);
+            return false;
+        }
+
+        const { X_mean, V, Lambda, marker_labels, feature_names, n_frames } = PCA;
+        sigmas = new Array(Lambda.length).fill(0);
+        modelGroup.rotation.x = -Math.PI / 2;
+
+        const pcaContainer = document.getElementById("pca-sliders-container");
+        sigmas.forEach(function(_, i) {
+            const group = document.createElement("div");
+            group.className = "control-group";
+            group.innerHTML = '<div class="label-row"><span>Component ' + (i + 1) + '</span><span class="value-display">0.0</span></div><input type="range" class="slider" min="-4" max="4" step="0.1" value="0">';
+            const slider = group.querySelector('input');
+            const display = group.querySelector('.value-display');
+            slider.oninput = function(e) {
+                sigmas[i] = parseFloat(e.target.value);
+                display.textContent = sigmas[i].toFixed(1);
+            };
+            pcaContainer.appendChild(group);
+        });
+
+        const markerIndex = {};
+        marker_labels.forEach(function(m, i) { markerIndex[m] = i; });
+
+        featureMap = feature_names.map(function(name) {
+            const p = name.split("_");
+            return { axis: p[0], frame: parseInt(p[2]), markerIndex: markerIndex[p[1]] };
+        });
+
+        return { marker_labels, n_frames };
+    }
+
+    async function initReal() {
+        try {
+            const res = await fetch("real_data.json");
+            const text = await res.text();
+            const cleanedText = text.replace(/:\s*NaN/g, ': null');
+            REAL_DATA = JSON.parse(cleanedText);
+        } catch (e) {
+            console.error("Error loading real_data.json", e);
+            return false;
+        }
+
+        try {
+            const mapRes = await fetch("data/pitch_marker_mapping.json");
+            MARKER_MAPPING = await mapRes.json();
+        } catch (e) {
+            console.error("Error loading pitch_marker_mapping.json", e);
+        }
+
+        REAL_DATA.forEach(function(pitch) {
+            const cleanFrames = {};
+            Object.entries(pitch.frames).forEach(function([frameIdx, frameData]) {
+                const cleanedFrame = {};
+                Object.entries(frameData).forEach(function([marker, coords]) {
+                    if (coords.x !== null && coords.y !== null && coords.z !== null &&
+                        !isNaN(coords.x) && !isNaN(coords.y) && !isNaN(coords.z)) {
+                        cleanedFrame[marker] = coords;
+                    }
+                });
+                if (Object.keys(cleanedFrame).length > 0) {
+                    cleanFrames[frameIdx] = cleanedFrame;
+                }
+            });
+            pitch.frames = cleanFrames;
+            pitch.max_frames = Math.max.apply(null, Object.keys(pitch.frames).map(Number)) + 1;
+        });
+
+        const userSelect = document.getElementById('user-select');
+        const users = new Set();
+        REAL_DATA.forEach(function(pitch) {
+            users.add(pitch.id.split('_')[0]);
+        });
+        Array.from(users).sort().forEach(function(user) {
+            const opt = document.createElement('option');
+            opt.value = user;
+            opt.textContent = "User " + user;
+            userSelect.appendChild(opt);
+        });
+
+        if (REAL_DATA.length > 0) {
+            const firstPitch = REAL_DATA[0];
+            const allMarkers = new Set();
+            Object.values(firstPitch.frames).forEach(function(frameData) {
+                Object.keys(frameData).forEach(function(m) { allMarkers.add(m); });
+            });
+            return Array.from(allMarkers);
+        }
+        return [];
+    }
+
+    async function init() {
+        const sphereGeo = new THREE.SphereGeometry(0.018, 24, 24);
+        const sphereMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.7 });
+
+        const pcaResult = await initPCA();
+        const realMarkers = await initReal();
+
+        if (!pcaResult && !realMarkers.length) {
+            document.getElementById('loading').textContent = "Error loading data files";
+            return;
+        }
+
+        // Add markerOrder to each pitch after loading
+        if (REAL_DATA) {
+            REAL_DATA.forEach(function(pitch) {
+                if (MARKER_MAPPING && MARKER_MAPPING[pitch.id]) {
+                    pitch.markerOrder = MARKER_MAPPING[pitch.id];
+                } else {
+                    const firstFrameData = Object.values(pitch.frames)[0] || {};
+                    pitch.markerOrder = Object.keys(firstFrameData);
+                }
+            });
+        }
+
+        let allMarkerLabels;
+        if (pcaResult) {
+            allMarkerLabels = pcaResult.marker_labels;
+        } else if (REAL_DATA && REAL_DATA.length > 0) {
+            const allMarkers = new Set();
+            REAL_DATA.forEach(function(pitch) {
+                pitch.markerOrder.forEach(function(m) { allMarkers.add(m); });
+            });
+            allMarkerLabels = Array.from(allMarkers);
+        } else {
+            allMarkerLabels = [];
+        }
+
+        allMarkerLabels.forEach(function(label, idx) {
+            const m = new THREE.Mesh(sphereGeo, sphereMat);
+            m.userData.label = label;
+            modelGroup.add(m);
+            markerMeshes.push(m);
+        });
+
+        const markerIndex = {};
+        allMarkerLabels.forEach(function(label, idx) {
+            markerIndex[label] = idx;
+        });
+
+        const lineMat = new THREE.LineBasicMaterial({ color: 0xcccccc, opacity: 0.6, transparent: true });
+        connections.forEach(function([a, b]) {
+            const ia = markerIndex[a];
+            const ib = markerIndex[b];
+            if (ia !== undefined && ib !== undefined) {
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
+                const l = new THREE.Line(g, lineMat);
+                modelGroup.add(l);
+                skeletonLines.push({ line: l, i: ia, j: ib });
+            }
+        });
+
+        const rStart = document.getElementById("range-start");
+        const rEnd = document.getElementById("range-end");
+        const n_frames = pcaResult ? pcaResult.n_frames : 100;
+        rStart.max = rEnd.max = n_frames - 1;
+        rEnd.value = n_frames - 1;
+        frameEnd = n_frames - 1;
+        updateRange();
+
+        document.getElementById('loading').style.display = 'none';
+        animate(0);
+    }
+
+    function reconstructPCA(frameIdx) {
+        const { X_mean, V, Lambda } = PCA;
+        const currentX = new Array(X_mean.length);
+        for (let i = 0; i < X_mean.length; i++) {
+            let val = X_mean[i];
+            for (let k = 0; k < sigmas.length; k++) {
+                val += sigmas[k] * Math.sqrt(Lambda[k]) * V[i][k];
+            }
+            currentX[i] = val;
+        }
+        featureMap.forEach(function(feat, fIdx) {
+            if (feat.frame === frameIdx) {
+                const m = markerMeshes[feat.markerIndex];
+                if (m) m.position[feat.axis] = currentX[fIdx];
+            }
+        });
+        skeletonLines.forEach(function(s) {
+            const pos = s.line.geometry.attributes.position.array;
+            const a = markerMeshes[s.i].position, b = markerMeshes[s.j].position;
+            pos[0] = a.x; pos[1] = a.y; pos[2] = a.z;
+            pos[3] = b.x; pos[4] = b.y; pos[5] = b.z;
+            s.line.geometry.attributes.position.needsUpdate = true;
+        });
+    }
+
+    function reconstructReal(frameIdx) {
+        if (!currentRealPitch || currentRealPitch.frames[frameIdx] === undefined) return;
+
+        const frameData = currentRealPitch.frames[frameIdx];
+        
+        markerMeshes.forEach(function(m) {
+            m.position.set(0, 0, 0);
+            m.visible = false;
+        });
+
+        Object.entries(frameData).forEach(function([markerLabel, pos]) {
+            for (let i = 0; i < markerMeshes.length; i++) {
+                if (markerMeshes[i].userData.label === markerLabel) {
+                    markerMeshes[i].position.set(pos.x, pos.y, pos.z);
+                    markerMeshes[i].visible = true;
+                    break;
+                }
+            }
+        });
+
+        skeletonLines.forEach(function(s) {
+            const a = markerMeshes[s.i];
+            const b = markerMeshes[s.j];
+            if (a.visible && b.visible) {
+                const pos = s.line.geometry.attributes.position.array;
+                pos[0] = a.position.x; pos[1] = a.position.y; pos[2] = a.position.z;
+                pos[3] = b.position.x; pos[4] = b.position.y; pos[5] = b.position.z;
+                s.line.geometry.attributes.position.needsUpdate = true;
+                s.line.visible = true;
+            } else {
+                s.line.visible = false;
+            }
+        });
+    }
+
+    function animate(time) {
+        requestAnimationFrame(animate);
+        if (time - lastFrameTime > (1000 / fps)) {
+            const frameToShow = Math.min(frame, mode === 'pca' ? PCA.n_frames - 1 : (currentRealPitch ? currentRealPitch.max_frames - 1 : 0));
+            
+            if (mode === 'pca') {
+                reconstructPCA(frameToShow);
+            } else {
+                reconstructReal(frameToShow);
+            }
+
+            frame = (frame >= frameEnd) ? frameStart : frame + 1;
+            lastFrameTime = time;
+        }
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', function() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // --- LOAD DATA ---
-    let PCA;
-    try {
-        const res = await fetch("pca_data.json");
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        PCA = await res.json();
-        document.getElementById('loading').style.display = 'none';
-    } catch (e) {
-        console.error(e);
-        const ld = document.getElementById('loading');
-        ld.textContent = "Error loading pca_data.json";
-        ld.style.color = "#ff4444";
-        return;
-    }
-
-    let fps = 60;
-    let motionPercent = 100;
-    let lastFrameTime = 0;
-    let frame = 0;
-
-    const { X_mean, V, Lambda, feature_names, marker_labels, n_frames } = PCA;
-    const K = Lambda.length;
-
-    // --- PROCESS CONNECTIONS ---
-    const markerIndex = {};
-    marker_labels.forEach((m, i) => markerIndex[m] = i);
-
-    const skeleton_connections_labels = [
-      ["LBHD","LFHD"], ["RBHD","RFHD"], ["LFHD","RFHD"], ["LBHD","RBHD"],
-      ["C7","STRN"], ["C7","CLAV"], ["STRN","CLAV"], ["CLAV","LSHO"], ["CLAV","RSHO"], ["LSHO","RSHO"],
-      ["LSHO","LASI"], ["RSHO","RASI"], ["LASI","RASI"], ["LPSI","RPSI"], ["LASI","LPSI"], ["RASI","RPSI"],
-      ["LSHO","LUPA"], ["LUPA","LELB"], ["LELB","LFRM"], ["LFRM","LWRA"], ["LWRA","LWRB"], ["LWRB","LFIN"],
-      ["RSHO","RUPA"], ["RUPA","RELB"], ["RELB","RFRM"], ["RFRM","RWRA"], ["RWRA","RWRB"], ["RWRB","RFIN"],
-      ["LASI","LTHI"], ["LTHI","LKNE"], ["LKNE","LTIB"], ["LTIB","LANK"], ["LANK","LHEE"], ["LANK","LTOE"], ["LHEE","LTOE"], ["LANK","LMANK"],
-      ["RASI","RTHI"], ["RTHI","RKNE"], ["RKNE","RTIB"], ["RTIB","RANK"], ["RANK","RHEE"], ["RANK","RTOE"], ["RHEE","RTOE"], ["RANK","RMANK"]
-    ];
-
-    const skeleton_connections = skeleton_connections_labels
-      .map(([a,b]) => [markerIndex[a], markerIndex[b]])
-      .filter(pair => pair.every(i => i !== undefined));
-
-    // --- CREATE 3D OBJECTS ---
-    const markerMeshes = [];
-    
-    // High-Vis Neon Material
-    const sphereGeometry = new THREE.SphereGeometry(0.018, 24, 24);
-    const sphereMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x00ffff,        // Bright Cyan
-        emissive: 0x00ffff,     // Self-illuminated
-        emissiveIntensity: 0.7, // High intensity glow
-        roughness: 0.2,
-        metalness: 0.1
-    });
-
-    marker_labels.forEach(() => {
-      const m = new THREE.Mesh(sphereGeometry, sphereMaterial);
-      m.castShadow = true; 
-      scene.add(m);
-      markerMeshes.push(m);
-    });
-
-    // Brighter Skeleton Lines
-    const lineMaterial = new THREE.LineBasicMaterial({ 
-        color: 0xcccccc, // Very light grey/white lines
-        opacity: 0.6,
-        transparent: true,
-        linewidth: 1 
-    });
-
-    const skeletonLines = skeleton_connections.map(([i,j]) => {
-      const g = new THREE.BufferGeometry();
-      g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
-      const l = new THREE.Line(g, lineMaterial);
-      scene.add(l);
-      return { line: l, i, j };
-    });
-
-    // Pre-parse feature map
-    const featureMap = feature_names.map(name => {
-      const parts = name.split("_");
-      return {
-        axis: parts[0], 
-        frame: parseInt(parts[2]), 
-        markerIndex: markerIndex[parts[1]]
-      };
-    });
-
-    // --- RECONSTRUCTION LOGIC ---
-    let sigmas = new Array(K).fill(0);
-    const currentX = new Array(X_mean.length).fill(0);
-
-    function reconstruct(frameIndex) {
-      // 1. Calculate Pose
-      for (let i = 0; i < X_mean.length; i++) {
-        let val = X_mean[i];
-        for (let k = 0; k < K; k++) {
-          val += sigmas[k] * Math.sqrt(Lambda[k]) * V[i][k];
-        }
-        currentX[i] = val;
-      }
-
-      // 2. Update Markers
-      for(let f = 0; f < featureMap.length; f++) {
-        const feat = featureMap[f];
-        if (feat.frame === frameIndex) {
-             const m = markerMeshes[feat.markerIndex];
-             if (m) m.position[feat.axis] = currentX[f];
-        }
-      }
-
-      // 3. Update Lines
-      for(let k=0; k < skeletonLines.length; k++) {
-          const { line, i, j } = skeletonLines[k];
-          const positions = line.geometry.attributes.position.array;
-          const a = markerMeshes[i].position;
-          const b = markerMeshes[j].position;
-          
-          positions[0] = a.x; positions[1] = a.y; positions[2] = a.z;
-          positions[3] = b.x; positions[4] = b.y; positions[5] = b.z;
-          
-          line.geometry.attributes.position.needsUpdate = true;
-      }
-    }
-
-    // --- GENERATE UI ---
-    const ui = document.getElementById("ui");
-    
-    // Header
-    const header = document.createElement("h3");
-    header.textContent = "PCA Motion Control";
-    ui.appendChild(header);
-
-    sigmas.forEach((_, i) => {
-      const container = document.createElement("div");
-      container.className = "control-group";
-
-      const labelRow = document.createElement("div");
-      labelRow.className = "label-row";
-      
-      const name = document.createElement("span");
-      name.textContent = `Component ${i+1}`;
-      
-      const valDisplay = document.createElement("span");
-      valDisplay.className = "value-display";
-      valDisplay.textContent = "0.0";
-
-      labelRow.appendChild(name);
-      labelRow.appendChild(valDisplay);
-
-      const slider = document.createElement("input");
-      slider.type = "range";
-      slider.min = -4;
-      slider.max = 4;
-      slider.step = 0.1;
-      slider.value = 0;
-      slider.className = "slider";
-
-      slider.oninput = (e) => {
-        const val = parseFloat(e.target.value);
-        sigmas[i] = val;
-        valDisplay.textContent = val.toFixed(1);
-      };
-
-      container.appendChild(labelRow);
-      container.appendChild(slider);
-      ui.appendChild(container);
-    });
-
-    // --- ANIMATION LOOP ---
-    //let lastFrameTime = 0;
-    
-    function animate(time) {
-      requestAnimationFrame(animate);
-
-      if (time - lastFrameTime > (1000 / fps)) {
-        reconstruct(Math.min(frame, n_frames - 1));
-        frame++;
-        if (frame > frameEnd) frame = frameStart;
-        lastFrameTime = time;
-    }
-      controls.update();
-      renderer.render(scene, camera);
-    }
-
-    animate(0);
-
-    // FPS Control
-const fpsGroup = document.createElement("div");
-fpsGroup.className = "control-group";
-
-const fpsLabelRow = document.createElement("div");
-fpsLabelRow.className = "label-row";
-
-const fpsName = document.createElement("span");
-fpsName.textContent = "FPS";
-
-const fpsDisplay = document.createElement("span");
-fpsDisplay.className = "value-display";
-fpsDisplay.textContent = "60";
-
-fpsLabelRow.appendChild(fpsName);
-fpsLabelRow.appendChild(fpsDisplay);
-
-const fpsSlider = document.createElement("input");
-fpsSlider.type = "range";
-fpsSlider.min = "1";
-fpsSlider.max = "120";
-fpsSlider.step = "1";
-fpsSlider.value = "60";
-fpsSlider.className = "slider";
-
-fpsSlider.oninput = (e) => {
-  fps = parseInt(e.target.value);
-  fpsDisplay.textContent = fps.toString();
-};
-
-fpsGroup.appendChild(fpsLabelRow);
-fpsGroup.appendChild(fpsSlider);
-ui.appendChild(fpsGroup);
-  }
-
-let frameStart = 0;
-let frameEnd = 100;
-
-// Motion Frame Range Control
-const motionGroup = document.createElement("div");
-motionGroup.className = "control-group";
-
-const motionLabelRow = document.createElement("div");
-motionLabelRow.className = "label-row";
-
-const motionName = document.createElement("span");
-motionName.textContent = "Frame Range";
-
-const motionDisplay = document.createElement("span");
-motionDisplay.className = "value-display";
-motionDisplay.textContent = "0-100";
-
-motionLabelRow.appendChild(motionName);
-motionLabelRow.appendChild(motionDisplay);
-
-motionGroup.appendChild(motionLabelRow);
-ui.appendChild(motionGroup);
-
-// Start Frame Slider
-const startGroup = document.createElement("div");
-startGroup.className = "control-group";
-
-const startLabelRow = document.createElement("div");
-startLabelRow.className = "label-row";
-
-const startName = document.createElement("span");
-startName.textContent = "Start";
-
-const startDisplay = document.createElement("span");
-startDisplay.className = "value-display";
-startDisplay.textContent = "0";
-
-startLabelRow.appendChild(startName);
-startLabelRow.appendChild(startDisplay);
-
-const startSlider = document.createElement("input");
-startSlider.type = "range";
-startSlider.min = "0";
-startSlider.max = "100";
-startSlider.step = "1";
-startSlider.value = "0";
-startSlider.className = "slider";
-
-startSlider.oninput = (e) => {
-  const val = parseInt(e.target.value);
-  if (val <= frameEnd) {
-    frameStart = val;
-    startDisplay.textContent = val;
-    motionDisplay.textContent = frameStart + "-" + frameEnd;
-  } else {
-    startSlider.value = frameStart;
-  }
-};
-
-startGroup.appendChild(startLabelRow);
-startGroup.appendChild(startSlider);
-ui.appendChild(startGroup);
-
-// End Frame Slider
-const endGroup = document.createElement("div");
-endGroup.className = "control-group";
-
-const endLabelRow = document.createElement("div");
-endLabelRow.className = "label-row";
-
-const endName = document.createElement("span");
-endName.textContent = "End";
-
-const endDisplay = document.createElement("span");
-endDisplay.className = "value-display";
-endDisplay.textContent = "100";
-
-endLabelRow.appendChild(endName);
-endLabelRow.appendChild(endDisplay);
-
-const endSlider = document.createElement("input");
-endSlider.type = "range";
-endSlider.min = "0";
-endSlider.max = "100";
-endSlider.step = "1";
-endSlider.value = "100";
-endSlider.className = "slider";
-
-endSlider.oninput = (e) => {
-  const val = parseInt(e.target.value);
-  if (val >= frameStart) {
-    frameEnd = val;
-    endDisplay.textContent = val;
-    motionDisplay.textContent = frameStart + "-" + frameEnd;
-  } else {
-    endSlider.value = frameEnd;
-  }
-};
-
-endGroup.appendChild(endLabelRow);
-endGroup.appendChild(endSlider);
-ui.appendChild(endGroup);
-
-  init();
+    init();
 </script>
 </body>
 </html>
