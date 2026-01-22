@@ -118,6 +118,25 @@ print(f"Removed {excluded_markers} from marker set for consistency")
 # Filter data to only include markers present in every pitch
 df = df.filter(pl.col('markerID').is_in(list(common_markers)))
 
+# Center data on y-axis mean per pitch
+print("Centering pitch motions on the y-axis")
+
+y_offsets = (
+    df.filter(
+        pl.col('frame') == pl.col('frame').min().over(['userID', 'sessionID', 'pitchNum'])
+    )
+    .group_by(['userID', 'sessionID', 'pitchNum'])
+    .agg(pl.col('y').mean().alias('y_offset'))
+)
+
+df = df.join(
+    y_offsets,
+    on = ['userID', 'sessionID', 'pitchNum'],
+    how = 'left'
+).with_columns(
+    (pl.col('y') - pl.col('y_offset')).alias('y')
+).drop('y_offset')
+
 # Dropping redundant columns
 df = df.drop(['session_key', 'pitch_key', 'session_pitch', 'session', 'pitch_speed_mph'])
 
