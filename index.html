@@ -139,6 +139,32 @@
             border-color: #E57200;
         }
 
+        .pause-btn {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .pause-btn:hover {
+            background: #E57200;
+            border-color: #E57200;
+        }
+
+        .pause-btn.paused {
+            background: #E57200;
+            border-color: #E57200;
+            color: #000;
+        }
+
         .slider {
             -webkit-appearance: none;
             width: 100%;
@@ -260,6 +286,19 @@
         .hidden {
             display: none !important;
         }
+
+        .frame-display {
+            background: rgba(229, 114, 0, 0.15);
+            border: 1px solid rgba(229, 114, 0, 0.3);
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 13px;
+            color: #E57200;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -268,6 +307,16 @@
     <div class="mode-buttons">
         <button class="mode-btn active" id="pca-mode-btn" onclick="setMode('pca')">PCA</button>
         <button class="mode-btn" id="real-mode-btn" onclick="setMode('real')">Real</button>
+    </div>
+
+    <div id="frame-display-section">
+        <div class="frame-display">
+            Frame: <span id="frame-counter">0</span>
+        </div>
+    </div>
+
+    <div id="playback-control-section">
+        <button class="pause-btn" id="pause-btn" onclick="togglePause()">▶ Play</button>
     </div>
 
     <div id="pca-section">
@@ -345,6 +394,7 @@
     let mode = 'pca';
     let PCA = null, REAL_DATA = null, MARKER_MAPPING = null;
     let sigmas = [], fps = 60, lastFrameTime = 0, frame = 0, frameStart = 0, frameEnd = 100;
+    let isPaused = false;
     const markerMeshes = [], skeletonLines = [];
     let featureMap = [];
     let currentRealPitch = null;
@@ -390,6 +440,8 @@
         document.getElementById('real-section').classList.toggle('hidden', mode !== 'real');
         frame = frameStart;
         lastFrameTime = 0;
+        isPaused = false;
+        updatePauseButton();
     };
 
     window.resetPCA = function() {
@@ -402,6 +454,22 @@
         displays.forEach(function(d) { d.textContent = "0.000"; });
         inputs.forEach(function(i) { i.value = "0.000"; });
     };
+
+    window.togglePause = function() {
+        isPaused = !isPaused;
+        updatePauseButton();
+    };
+
+    function updatePauseButton() {
+        const btn = document.getElementById('pause-btn');
+        if (isPaused) {
+            btn.textContent = '⏸ Pause';
+            btn.classList.add('paused');
+        } else {
+            btn.textContent = '▶ Play';
+            btn.classList.remove('paused');
+        }
+    }
 
     window.updateFPS = function() {
         fps = parseInt(document.getElementById("fps-slider").value);
@@ -456,6 +524,8 @@
             frameEnd = currentRealPitch.max_frames - 1;
             frame = frameStart;
             lastFrameTime = 0;
+            isPaused = false;
+            updatePauseButton();
             
             const rStart = document.getElementById("range-start");
             const rEnd = document.getElementById("range-end");
@@ -764,13 +834,20 @@
         if (time - lastFrameTime > (1000 / fps)) {
             const frameToShow = Math.min(frame, mode === 'pca' ? PCA.n_frames - 1 : (currentRealPitch ? currentRealPitch.max_frames - 1 : 0));
             
+            // Update frame counter
+            document.getElementById('frame-counter').textContent = frameToShow;
+            
             if (mode === 'pca') {
                 reconstructPCA(frameToShow);
             } else {
                 reconstructReal(frameToShow);
             }
 
-            frame = (frame >= frameEnd) ? frameStart : frame + 1;
+            // Only advance frame if not paused
+            if (!isPaused) {
+                frame = (frame >= frameEnd) ? frameStart : frame + 1;
+            }
+            
             lastFrameTime = time;
         }
         controls.update();
