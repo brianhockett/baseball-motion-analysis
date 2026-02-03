@@ -210,6 +210,40 @@
             border-radius: 2px;
         }
 
+        .pca-slider-group {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .pca-slider-group:last-child {
+            border-bottom: none;
+        }
+
+        .pca-input-wrapper {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .pca-number-input {
+            flex: 1;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: monospace;
+            text-align: center;
+        }
+
+        .pca-number-input:focus {
+            outline: none;
+            border-color: #E57200;
+            background: rgba(229, 114, 0, 0.1);
+        }
+
         #loading {
             position: absolute;
             top: 50%;
@@ -361,10 +395,12 @@
     window.resetPCA = function() {
         sigmas.fill(0);
         const container = document.getElementById("pca-sliders-container");
-        const sliders = container.querySelectorAll('input');
+        const sliders = container.querySelectorAll('input[type="range"]');
         const displays = container.querySelectorAll('.value-display');
+        const inputs = container.querySelectorAll('input[type="number"]');
         sliders.forEach(function(s) { s.value = 0; });
-        displays.forEach(function(d) { d.textContent = "0.0"; });
+        displays.forEach(function(d) { d.textContent = "0.000"; });
+        inputs.forEach(function(i) { i.value = "0.000"; });
     };
 
     window.updateFPS = function() {
@@ -458,14 +494,64 @@
         const pcaContainer = document.getElementById("pca-sliders-container");
         sigmas.forEach(function(_, i) {
             const group = document.createElement("div");
-            group.className = "control-group";
-            group.innerHTML = '<div class="label-row"><span>Component ' + (i + 1) + '</span><span class="value-display">0.0</span></div><input type="range" class="slider" min="-4" max="4" step="0.1" value="0">';
-            const slider = group.querySelector('input');
-            const display = group.querySelector('.value-display');
+            group.className = "pca-slider-group";
+            
+            const labelDiv = document.createElement("div");
+            labelDiv.className = "label-row";
+            labelDiv.innerHTML = '<span>Component ' + (i + 1) + '</span><span class="value-display">0.000</span>';
+            group.appendChild(labelDiv);
+            
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.className = 'slider';
+            slider.min = '-4';
+            slider.max = '4';
+            slider.step = '0.001';
+            slider.value = '0';
+            group.appendChild(slider);
+
+            const inputWrapper = document.createElement('div');
+            inputWrapper.className = 'pca-input-wrapper';
+            
+            const numInput = document.createElement('input');
+            numInput.type = 'number';
+            numInput.className = 'pca-number-input';
+            numInput.min = '-4';
+            numInput.max = '4';
+            numInput.step = '0.001';
+            numInput.value = '0.000';
+            numInput.placeholder = '0.000';
+            inputWrapper.appendChild(numInput);
+            
+            group.appendChild(inputWrapper);
+
+            const display = labelDiv.querySelector('.value-display');
+            
             slider.oninput = function(e) {
                 sigmas[i] = parseFloat(e.target.value);
-                display.textContent = sigmas[i].toFixed(1);
+                const val = sigmas[i].toFixed(3);
+                display.textContent = val;
+                numInput.value = val;
             };
+
+            numInput.onchange = function(e) {
+                let val = parseFloat(e.target.value);
+                if (isNaN(val)) val = 0;
+                val = Math.max(-4, Math.min(4, val));
+                sigmas[i] = val;
+                const valStr = val.toFixed(3);
+                display.textContent = valStr;
+                slider.value = val;
+                numInput.value = valStr;
+            };
+
+            numInput.onblur = function(e) {
+                let val = parseFloat(e.target.value);
+                if (isNaN(val)) val = 0;
+                val = Math.max(-4, Math.min(4, val));
+                numInput.value = val.toFixed(3);
+            };
+
             pcaContainer.appendChild(group);
         });
 
