@@ -1,4 +1,3 @@
 data/c3d_files/
 *.parquet
-*.mp4
 *.json

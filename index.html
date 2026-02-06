@@ -808,7 +808,7 @@
 
     async function initPCA() {
         try {
-            const res = await fetch("pca_data.json");
+            const res = await fetch("data/pca_data.json");
             PCA = await res.json();
         } catch (e) {
             console.error("Error loading pca_data.json", e);
@@ -869,7 +869,7 @@
 
     async function initReal() {
         try {
-            const res = await fetch("real_data.json");
+            const res = await fetch("data/real_data.json");
             const text = await res.text();
             const cleanedText = text.replace(/:\s*NaN/g, ': null');
             REAL_DATA = JSON.parse(cleanedText);
@@ -928,7 +928,7 @@
 
     async function loadPCAScores() {
         try {
-            const res = await fetch("pca_scores.json");
+            const res = await fetch("data/pca_scores.json");
             PCA_SCORES = await res.json();
         } catch (e) {
             console.error("Error loading pca_scores.json", e);
