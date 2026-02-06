@@ -82,7 +82,7 @@ This project performs Principal Component Analysis (PCA) on 3D motion capture da
 ## How to Run
 
 1. **Download C3D data**
-   - Visit [openbiomechanics.org](https://openbiomechanics.org)
+   - Visit [Driveline OpenBiomechanics](https://github.com/drivelineresearch/openbiomechanics)
    - Download baseball pitching motion capture files
    - Place all `.c3d` files in `./data/c3d_files/`
 
