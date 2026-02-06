@@ -4,207 +4,336 @@
     <meta charset="UTF-8">
     <title>PCA & Real Pitch Motions</title>
     <style>
+        * { box-sizing: border-box; }
+        
         body {
             margin: 0;
             overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0F172A;
-            color: #eee;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a1419 0%, #162433 50%, #0f1d2a 100%);
+            color: #e8eaed;
         }
 
         #ui {
             position: absolute;
             top: 20px;
             left: 20px;
-            width: 280px;
-            max-height: 85vh;
-            overflow-y: auto;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 320px;
+            background: #1a273d;
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid #dba86f;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            scrollbar-width: thin;
-            scrollbar-color: #555 transparent;
             z-index: 10;
+            max-height: none;
+            overflow-y: visible;
         }
 
         #ui::-webkit-scrollbar { width: 6px; }
         #ui::-webkit-scrollbar-track { background: transparent; }
-        #ui::-webkit-scrollbar-thumb { background-color: #555; border-radius: 10px; }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin: 20px 0 12px 0;
-            padding-bottom: 8px;
-        }
-
-        h3 {
-            margin: 0;
-            font-size: 15px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            color: #fff;
-        }
-        
-        .reset-link {
-            font-size: 10px;
-            color: #fff;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-weight: bold;
-            text-decoration: none;
-            transition: opacity 0.2s;
-        }
-        .reset-link:hover { opacity: 0.7; }
+        #ui::-webkit-scrollbar-thumb { background-color: #dba86f; border-radius: 3px; }
 
         .mode-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 14px;
         }
 
         .mode-btn {
-            padding: 10px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+            padding: 9px;
+            border: 1.5px solid #465a75;
+            background: #1f2f45;
+            color: #a0a0a0;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.4px;
             transition: all 0.2s;
         }
 
         .mode-btn:hover {
-            background: rgba(229, 114, 0, 0.3);
-            border-color: #E57200;
+            background: #263548;
+            border-color: #dba86f;
+            color: #e8eaed;
         }
 
         .mode-btn.active {
-            background: #E57200;
-            border-color: #E57200;
-            color: #000;
+            background: #dba86f;
+            border-color: #dba86f;
+            color: #0f172a;
+            font-weight: 700;
         }
 
-        .control-group {
-            margin-bottom: 14px;
+        .top-controls {
             display: flex;
-            flex-direction: column;
-        }
-
-        .label-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            margin-bottom: 6px;
-            font-weight: 500;
-            color: #aaa;
-            text-transform: uppercase;
-        }
-
-        .value-display {
-            color: #E57200;
-            font-family: monospace;
-        }
-
-        .button-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
             gap: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 14px;
         }
 
-        .view-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
+        .frame-display {
+            flex: 1;
+            background: #1f2f45;
+            border: 1px solid #465a75;
             padding: 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
-            text-transform: uppercase;
-            transition: all 0.2s;
-        }
-
-        .view-btn:hover {
-            background: #E57200;
-            border-color: #E57200;
+            border-radius: 6px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #dba86f;
+            font-weight: 600;
         }
 
         .pause-btn {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-            padding: 10px;
-            border-radius: 4px;
+            width: 45px;
+            background: #1f2f45;
+            border: 1.5px solid #465a75;
+            color: #e8eaed;
+            padding: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
-            text-transform: uppercase;
             transition: all 0.2s;
-            margin-bottom: 10px;
         }
 
         .pause-btn:hover {
-            background: #E57200;
-            border-color: #E57200;
+            background: #263548;
+            border-color: #dba86f;
         }
 
         .pause-btn.paused {
-            background: #E57200;
-            border-color: #E57200;
-            color: #000;
+            background: #dba86f;
+            border-color: #dba86f;
+            color: #0f172a;
         }
 
-        .slider {
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1.5px solid #dba86f;
+            margin: 12px 0 10px 0;
+            padding-bottom: 8px;
+        }
+
+        .section-header:first-child {
+            margin-top: 0;
+        }
+
+        h3 {
+            margin: 0;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #e8eaed;
+            text-transform: uppercase;
+        }
+
+        .reset-link {
+            font-size: 8px;
+            color: #dba86f;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .reset-link:hover {
+            color: #dba86f;
+        }
+
+        /* IMPROVED PCA SLIDERS */
+        #pca-sliders-container {
+            display: grid;
+            gap: 6px;
+            margin-bottom: 12px;
+            padding: 4px;
+        }
+
+        #pca-sliders-container::-webkit-scrollbar { width: 5px; }
+        #pca-sliders-container::-webkit-scrollbar-thumb { background-color: #465a75; border-radius: 2px; }
+
+        .pca-slider-group {
+            display: grid;
+            grid-template-columns: 30px 1fr;
+            gap: 6px;
+            align-items: center;
+            padding: 6px;
+            background: #1f2f45;
+            border-radius: 5px;
+            border: 1px solid #2a3f55;
+            transition: all 0.15s;
+        }
+
+        .pca-slider-group:hover {
+            background: #232d45;
+            border-color: #465a75;
+        }
+
+        .pc-label {
+            color: #dba86f;
+            font-size: 10px;
+            font-weight: 700;
+            text-align: center;
+            min-width: 30px;
+        }
+
+        .slider-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 40px;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .pca-slider {
             -webkit-appearance: none;
             width: 100%;
-            height: 4px;
-            background: #444;
+            height: 3px;
+            background: #465a75;
             border-radius: 2px;
             outline: none;
             cursor: pointer;
         }
 
-        .slider::-webkit-slider-thumb {
+        .pca-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            background: #E57200;
+            background: #dba86f;
             cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .pca-slider::-webkit-slider-thumb:hover {
+            background: #dba86f;
+            transform: scale(1.2);
+        }
+
+        .pc-value {
+            color: #a0a0a0;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            text-align: right;
+            min-width: 40px;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        .control-group label {
+            font-size: 9px;
+            color: #8a9bab;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            display: block;
+            font-weight: 600;
+            letter-spacing: 0.3px;
         }
 
         select {
             width: 100%;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-            border-radius: 4px;
-            font-size: 12px;
+            padding: 7px;
+            background: #1f2f45;
+            border: 1px solid #465a75;
+            color: #e8eaed;
+            border-radius: 5px;
+            font-size: 11px;
             cursor: pointer;
-            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        select:hover {
+            background: #263548;
+            border-color: #dba86f;
+        }
+
+        select:focus {
+            outline: none;
+            background: #263548;
+            border-color: #dba86f;
         }
 
         select option {
-            background: #1a2332;
-            color: #fff;
+            background: #1a273d;
+            color: #e8eaed;
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .view-btn {
+            background: #1f2f45;
+            border: 1px solid #465a75;
+            color: #a0a0a0;
+            padding: 7px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 9px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: all 0.2s;
+        }
+
+        .view-btn:hover {
+            background: #263548;
+            border-color: #dba86f;
+            color: #e8eaed;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #8a9bab;
+            text-transform: uppercase;
+        }
+
+        .value-display {
+            color: #dba86f;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 3px;
+            background: #465a75;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            margin-bottom: 4px;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #dba86f;
+            cursor: pointer;
         }
 
         .range-slider-wrapper {
             position: relative;
-            height: 20px;
-            margin-top: 5px;
+            height: 16px;
+            margin-top: 6px;
         }
 
         .dual-input {
@@ -220,54 +349,20 @@
         .dual-input::-webkit-slider-thumb {
             pointer-events: auto;
             -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            background: #E57200;
+            background: #dba86f;
             cursor: pointer;
         }
 
         .range-track {
             position: absolute;
-            top: 5px;
+            top: 6px;
             width: 100%;
-            height: 4px;
-            background: #444;
+            height: 3px;
+            background: #465a75;
             border-radius: 2px;
-        }
-
-        .pca-slider-group {
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .pca-slider-group:last-child {
-            border-bottom: none;
-        }
-
-        .pca-input-wrapper {
-            display: flex;
-            gap: 6px;
-            margin-top: 6px;
-        }
-
-        .pca-number-input {
-            flex: 1;
-            padding: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-            border-radius: 4px;
-            font-size: 11px;
-            font-family: monospace;
-            text-align: center;
-        }
-
-        .pca-number-input:focus {
-            outline: none;
-            border-color: #E57200;
-            background: rgba(229, 114, 0, 0.1);
         }
 
         #loading {
@@ -275,29 +370,52 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 18px;
-            color: #888;
-            background: rgba(0,0,0,0.8);
-            padding: 20px 40px;
+            font-size: 16px;
+            color: #dba86f;
+            background: #1a273d;
+            border: 1px solid #dba86f;
+            padding: 24px 40px;
             border-radius: 8px;
             pointer-events: none;
+            font-weight: 600;
         }
 
         .hidden {
             display: none !important;
         }
 
-        .frame-display {
-            background: rgba(229, 114, 0, 0.15);
-            border: 1px solid rgba(229, 114, 0, 0.3);
-            padding: 8px;
-            border-radius: 4px;
-            text-align: center;
-            font-family: monospace;
-            font-size: 13px;
-            color: #E57200;
+        #pc-weights-display {
+            background: #1f2f45;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #2a3f55;
+            min-height: 280px;
+            font-size: 9px;
+        }
+
+        #pc-weights-display::-webkit-scrollbar { width: 5px; }
+        #pc-weights-display::-webkit-scrollbar-thumb { background-color: #465a75; border-radius: 2px; }
+
+        .pc-weight-item {
+            display: grid;
+            grid-template-columns: 35px 1fr;
+            gap: 6px;
+            align-items: center;
+            padding: 4px;
+            margin-bottom: 3px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .pc-weight-item span:first-child {
+            color: #dba86f;
+            font-weight: 700;
+        }
+
+        .pc-weight-item span:last-child {
+            font-family: 'Courier New', monospace;
             font-weight: 600;
-            margin-bottom: 10px;
+            text-align: right;
         }
     </style>
 </head>
@@ -309,59 +427,105 @@
         <button class="mode-btn" id="real-mode-btn" onclick="setMode('real')">Real</button>
     </div>
 
-    <div id="frame-display-section">
-        <div class="frame-display">
-            Frame: <span id="frame-counter">0</span>
-        </div>
+    <div class="top-controls">
+        <div class="frame-display">Frame: <span id="frame-counter">0</span></div>
+        <button class="pause-btn" id="pause-btn" onclick="togglePause()">▶</button>
     </div>
 
-    <div id="playback-control-section">
-        <button class="pause-btn" id="pause-btn" onclick="togglePause()">▶ Play</button>
+    <div class="control-group" style="margin-bottom: 12px;">
+        <input type="range" id="frame-slider" class="slider" min="0" max="100" value="0" oninput="setFrameFromSlider()" style="margin-bottom: 0;">
     </div>
 
     <div id="pca-section">
         <div class="section-header">
-            <h3>PCA Motion Control</h3>
+            <h3>PCA Components</h3>
             <span class="reset-link" onclick="resetPCA()">Reset</span>
         </div>
         <div id="pca-sliders-container"></div>
+        
+        <div style="margin-top: 8px;">
+            <button class="view-btn" id="average-toggle" onclick="toggleAverageMotion()" style="width: 100%; background: #465a75; border-color: #465a75; color: #a0a0a0; font-weight: 600;">Average Motion: OFF</button>
+        </div>
+        
+        <div style="background: #1f2f45; padding: 8px; border-radius: 5px; border: 1px solid #2a3f55; font-size: 8px; margin-top: 8px;">
+            <div style="color: #8a9bab; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;">Legend:</div>
+            <div style="display: grid; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #67d5ff;"></div>
+                    <span style="color: #a0a0a0;">Average Motion</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #dba86f;"></div>
+                    <span style="color: #a0a0a0;">PCA Motion</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="real-section" class="hidden">
-        <div class="section-header">
-            <h3>Pitch Selection</h3>
-        </div>
-        
-        <div class="control-group">
-            <label style="font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 6px;">User ID</label>
-            <select id="user-select" onchange="updatePitchFilters()">
-                <option value="">-- All Users --</option>
-            </select>
-        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <div class="section-header" style="margin-top: 0; margin-bottom: 8px;">
+                    <h3 style="font-size: 11px;">Pitch Selection</h3>
+                </div>
+                
+                <div class="control-group" style="margin-bottom: 8px;">
+                    <label>User</label>
+                    <select id="user-select" onchange="updatePitchFilters()">
+                        <option value="">All Users</option>
+                    </select>
+                </div>
 
-        <div class="control-group">
-            <label style="font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 6px;">Select Pitch</label>
-            <select id="pitch-select" onchange="onPitchSelect()">
-                <option value="">-- Select a pitch --</option>
-            </select>
+                <div class="control-group">
+                    <label>Pitch</label>
+                    <select id="pitch-select" onchange="onPitchSelect()">
+                        <option value="">Select a pitch</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                    <button class="view-btn" id="real-motion-toggle" onclick="toggleRealMotion()" style="flex: 1; background: #67d5ff; border-color: #67d5ff; color: #0a1419; font-weight: 700;">Real Motion: ON</button>
+                </div>
+
+                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                    <button class="view-btn" id="reconstruction-toggle" onclick="toggleReconstruction()" style="flex: 1; background: #465a75; border-color: #465a75; color: #a0a0a0; font-weight: 600;">Reconstruction: OFF</button>
+                </div>
+
+                <div style="background: #1f2f45; padding: 8px; border-radius: 5px; border: 1px solid #2a3f55; font-size: 8px;">
+                    <div style="color: #8a9bab; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;">Legend:</div>
+                    <div style="display: grid; gap: 4px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: #67d5ff;"></div>
+                            <span style="color: #a0a0a0;">Real Motion</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: #dba86f;"></div>
+                            <span style="color: #a0a0a0;">PCA Reconstruction</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="pc-weights-display">
+                <div style="color: #8a9bab; text-align: center; padding: 30px 0; font-size: 9px;">Select a pitch to view PC weights</div>
+            </div>
         </div>
     </div>
 
     <div id="camera-section">
         <div class="section-header">
-            <h3>Camera Views</h3>
+            <h3>Camera</h3>
         </div>
         <div class="button-row">
             <button class="view-btn" onclick="setView('front')">Front</button>
             <button class="view-btn" onclick="setView('side')">Side</button>
             <button class="view-btn" onclick="setView('back')">Back</button>
-            <button class="view-btn" onclick="setView('perspective')">Perspective</button>
+            <button class="view-btn" onclick="setView('perspective')">3D</button>
         </div>
     </div>
 
     <div id="playback-section">
         <div class="section-header">
-            <h3>Playback & Speed</h3>
+            <h3>Playback</h3>
         </div>
         <div class="control-group">
             <div class="label-row">
@@ -395,12 +559,22 @@
     let PCA = null, REAL_DATA = null, MARKER_MAPPING = null;
     let sigmas = [], fps = 60, lastFrameTime = 0, frame = 0, frameStart = 0, frameEnd = 100;
     let isPaused = false;
+    let meanMotion = null;
     const markerMeshes = [], skeletonLines = [];
+    const meanMarkerMeshes = [], meanSkeletonLines = [];
     let featureMap = [];
     let currentRealPitch = null;
+    let PCA_SCORES = null;
+    let showReconstruction = false;
+    let showAverageMotion = false;
+    let showRealMotion = true;
+    
+    // Material references - will be set in init
+    let pcaMotionMat, averageMotionMat, realMotionMat, reconstructionMat;
+    let pcaMotionLineMat, averageMotionLineMat, realMotionLineMat, reconstructionLineMat;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0F172A);
+    scene.background = new THREE.Color(0x0a1419);
     const modelGroup = new THREE.Group();
     scene.add(modelGroup);
 
@@ -438,6 +612,20 @@
         document.getElementById('real-mode-btn').classList.toggle('active', mode === 'real');
         document.getElementById('pca-section').classList.toggle('hidden', mode !== 'pca');
         document.getElementById('real-section').classList.toggle('hidden', mode !== 'real');
+        
+        // Swap materials based on mode
+        if (mode === 'pca') {
+            markerMeshes.forEach(function(m) { m.material = pcaMotionMat; });
+            meanMarkerMeshes.forEach(function(m) { m.material = averageMotionMat; });
+            skeletonLines.forEach(function(s) { s.line.material = pcaMotionLineMat; });
+            meanSkeletonLines.forEach(function(s) { s.line.material = averageMotionLineMat; });
+        } else {
+            markerMeshes.forEach(function(m) { m.material = realMotionMat; });
+            meanMarkerMeshes.forEach(function(m) { m.material = reconstructionMat; });
+            skeletonLines.forEach(function(s) { s.line.material = realMotionLineMat; });
+            meanSkeletonLines.forEach(function(s) { s.line.material = reconstructionLineMat; });
+        }
+        
         frame = frameStart;
         lastFrameTime = 0;
         isPaused = false;
@@ -448,11 +636,9 @@
         sigmas.fill(0);
         const container = document.getElementById("pca-sliders-container");
         const sliders = container.querySelectorAll('input[type="range"]');
-        const displays = container.querySelectorAll('.value-display');
-        const inputs = container.querySelectorAll('input[type="number"]');
+        const displays = container.querySelectorAll('.pc-value');
         sliders.forEach(function(s) { s.value = 0; });
         displays.forEach(function(d) { d.textContent = "0.000"; });
-        inputs.forEach(function(i) { i.value = "0.000"; });
     };
 
     window.togglePause = function() {
@@ -463,10 +649,10 @@
     function updatePauseButton() {
         const btn = document.getElementById('pause-btn');
         if (isPaused) {
-            btn.textContent = '⏸ Pause';
+            btn.textContent = '⏸';
             btn.classList.add('paused');
         } else {
-            btn.textContent = '▶ Play';
+            btn.textContent = '▶';
             btn.classList.remove('paused');
         }
     }
@@ -476,6 +662,18 @@
         document.getElementById("fps-display").textContent = fps;
     };
 
+    window.setFrameFromSlider = function() {
+        const frameSlider = document.getElementById("frame-slider");
+        frame = parseInt(frameSlider.value);
+        lastFrameTime = 0;
+        // Pause animation while dragging slider
+        if (!frameSlider.dataset.isDragging) {
+            isPaused = true;
+            updatePauseButton();
+        }
+    };
+
+
     window.updateRange = function() {
         const rStart = parseInt(document.getElementById("range-start").value);
         const rEnd = parseInt(document.getElementById("range-end").value);
@@ -484,31 +682,78 @@
         document.getElementById("range-display").textContent = frameStart + " - " + frameEnd;
     };
 
+    window.toggleReconstruction = function() {
+        showReconstruction = !showReconstruction;
+        const btn = document.getElementById('reconstruction-toggle');
+        if (showReconstruction) {
+            btn.textContent = 'Reconstruction: ON';
+            btn.style.background = '#dba86f';
+            btn.style.borderColor = '#dba86f';
+            btn.style.color = '#0a1419';
+            btn.style.fontWeight = '700';
+        } else {
+            btn.textContent = 'Reconstruction: OFF';
+            btn.style.background = '#465a75';
+            btn.style.borderColor = '#465a75';
+            btn.style.color = '#a0a0a0';
+            btn.style.fontWeight = '600';
+        }
+    };
+
+    window.toggleAverageMotion = function() {
+        showAverageMotion = !showAverageMotion;
+        const btn = document.getElementById('average-toggle');
+        if (showAverageMotion) {
+            btn.textContent = 'Average Motion: ON';
+            btn.style.background = '#67d5ff';
+            btn.style.borderColor = '#67d5ff';
+            btn.style.color = '#0a1419';
+            btn.style.fontWeight = '700';
+        } else {
+            btn.textContent = 'Average Motion: OFF';
+            btn.style.background = '#465a75';
+            btn.style.borderColor = '#465a75';
+            btn.style.color = '#a0a0a0';
+            btn.style.fontWeight = '600';
+        }
+    };
+
+    window.toggleRealMotion = function() {
+        showRealMotion = !showRealMotion;
+        const btn = document.getElementById('real-motion-toggle');
+        if (showRealMotion) {
+            btn.textContent = 'Real Motion: ON';
+            btn.style.background = '#67d5ff';
+            btn.style.borderColor = '#67d5ff';
+            btn.style.color = '#0a1419';
+            btn.style.fontWeight = '700';
+        } else {
+            btn.textContent = 'Real Motion: OFF';
+            btn.style.background = '#465a75';
+            btn.style.borderColor = '#465a75';
+            btn.style.color = '#a0a0a0';
+            btn.style.fontWeight = '600';
+        }
+    };
+
     window.updatePitchFilters = function() {
         if (!REAL_DATA) return;
         
         const selectedUser = document.getElementById('user-select').value;
-
         const filteredPitches = REAL_DATA.filter(function(pitch) {
             const pitchUser = pitch.id.split('_')[0];
-            const userMatch = !selectedUser || pitchUser === selectedUser;
-            return userMatch;
+            return !selectedUser || pitchUser === selectedUser;
         });
 
         const pitchSelect = document.getElementById('pitch-select');
-        pitchSelect.innerHTML = '<option value="">-- Select a pitch --</option>';
+        pitchSelect.innerHTML = '<option value="">Select a pitch</option>';
         filteredPitches.forEach(function(pitch) {
             const opt = document.createElement('option');
             opt.value = pitch.id;
-            
-            // Extract velocity from label which has format "U:XXX S:XXX P:XXX (TYPE @ VELmph)"
             const labelMatch = pitch.label.match(/@\s*([\d.]+)mph/);
             const vel = labelMatch ? parseFloat(labelMatch[1]) : 0;
-            const velStr = vel.toFixed(1);
-            
-            // Update label with formatted velocity
             const parts = pitch.label.split(' @ ');
-            const newLabel = parts[0] + ' @ ' + velStr + 'mph)';
+            const newLabel = parts[0] + ' @ ' + vel.toFixed(1) + 'mph)';
             opt.textContent = newLabel;
             pitchSelect.appendChild(opt);
         });
@@ -529,10 +774,23 @@
             
             const rStart = document.getElementById("range-start");
             const rEnd = document.getElementById("range-end");
+            const frameSlider = document.getElementById("frame-slider");
             rStart.max = rEnd.max = frameEnd;
+            frameSlider.max = frameEnd;
             rStart.value = frameStart;
             rEnd.value = frameEnd;
+            frameSlider.value = frameStart;
             document.getElementById("range-display").textContent = frameStart + " - " + frameEnd;
+
+            if (PCA_SCORES) {
+                let pcaScoreEntry = PCA_SCORES.find(function(entry) { return entry.id === pitchId; });
+                if (!pcaScoreEntry) {
+                    const parts = pitchId.split('_');
+                    const paddedId = parts[0] + '_' + parts[1] + '_' + parts[2].padStart(3, '0');
+                    pcaScoreEntry = PCA_SCORES.find(function(entry) { return entry.id === paddedId; });
+                }
+                if (pcaScoreEntry) displayPCWeights(pcaScoreEntry.pc_scores);
+            }
         }
     };
 
@@ -566,62 +824,34 @@
             const group = document.createElement("div");
             group.className = "pca-slider-group";
             
-            const labelDiv = document.createElement("div");
-            labelDiv.className = "label-row";
-            labelDiv.innerHTML = '<span>Component ' + (i + 1) + '</span><span class="value-display">0.000</span>';
-            group.appendChild(labelDiv);
+            const label = document.createElement("div");
+            label.className = "pc-label";
+            label.textContent = "PC" + (i + 1);
+            group.appendChild(label);
+            
+            const wrapper = document.createElement("div");
+            wrapper.className = "slider-wrapper";
             
             const slider = document.createElement('input');
             slider.type = 'range';
-            slider.className = 'slider';
+            slider.className = 'pca-slider';
             slider.min = '-4';
             slider.max = '4';
             slider.step = '0.001';
             slider.value = '0';
-            group.appendChild(slider);
-
-            const inputWrapper = document.createElement('div');
-            inputWrapper.className = 'pca-input-wrapper';
             
-            const numInput = document.createElement('input');
-            numInput.type = 'number';
-            numInput.className = 'pca-number-input';
-            numInput.min = '-4';
-            numInput.max = '4';
-            numInput.step = '0.001';
-            numInput.value = '0.000';
-            numInput.placeholder = '0.000';
-            inputWrapper.appendChild(numInput);
-            
-            group.appendChild(inputWrapper);
-
-            const display = labelDiv.querySelector('.value-display');
+            const display = document.createElement('div');
+            display.className = 'pc-value';
+            display.textContent = '0.000';
             
             slider.oninput = function(e) {
                 sigmas[i] = parseFloat(e.target.value);
-                const val = sigmas[i].toFixed(3);
-                display.textContent = val;
-                numInput.value = val;
+                display.textContent = sigmas[i].toFixed(3);
             };
-
-            numInput.onchange = function(e) {
-                let val = parseFloat(e.target.value);
-                if (isNaN(val)) val = 0;
-                val = Math.max(-4, Math.min(4, val));
-                sigmas[i] = val;
-                const valStr = val.toFixed(3);
-                display.textContent = valStr;
-                slider.value = val;
-                numInput.value = valStr;
-            };
-
-            numInput.onblur = function(e) {
-                let val = parseFloat(e.target.value);
-                if (isNaN(val)) val = 0;
-                val = Math.max(-4, Math.min(4, val));
-                numInput.value = val.toFixed(3);
-            };
-
+            
+            wrapper.appendChild(slider);
+            wrapper.appendChild(display);
+            group.appendChild(wrapper);
             pcaContainer.appendChild(group);
         });
 
@@ -633,6 +863,7 @@
             return { axis: p[0], frame: parseInt(p[2]), markerIndex: markerIndex[p[1]] };
         });
 
+        meanMotion = X_mean.slice();
         return { marker_labels, n_frames };
     }
 
@@ -695,19 +926,40 @@
         return [];
     }
 
+    async function loadPCAScores() {
+        try {
+            const res = await fetch("pca_scores.json");
+            PCA_SCORES = await res.json();
+        } catch (e) {
+            console.error("Error loading pca_scores.json", e);
+            PCA_SCORES = null;
+        }
+    }
+
     async function init() {
         const sphereGeo = new THREE.SphereGeometry(0.018, 24, 24);
-        const sphereMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.7 });
+        
+        // PCA Tab materials
+        pcaMotionMat = new THREE.MeshStandardMaterial({ color: 0xdba86f, emissive: 0xdba86f, emissiveIntensity: 0.5 });
+        averageMotionMat = new THREE.MeshStandardMaterial({ color: 0x67d5ff, emissive: 0x67d5ff, emissiveIntensity: 0.5 });
+        
+        // Real Tab materials
+        realMotionMat = new THREE.MeshStandardMaterial({ color: 0x67d5ff, emissive: 0x67d5ff, emissiveIntensity: 0.5 });
+        reconstructionMat = new THREE.MeshStandardMaterial({ color: 0xdba86f, emissive: 0xdba86f, emissiveIntensity: 0.5 });
+        
+        // Use PCA materials by default
+        const sphereMat = pcaMotionMat;
+        const meanSphereMat = averageMotionMat;
 
         const pcaResult = await initPCA();
         const realMarkers = await initReal();
+        await loadPCAScores();
 
         if (!pcaResult && !realMarkers.length) {
             document.getElementById('loading').textContent = "Error loading data files";
             return;
         }
 
-        // Add markerOrder to each pitch after loading
         if (REAL_DATA) {
             REAL_DATA.forEach(function(pitch) {
                 if (MARKER_MAPPING && MARKER_MAPPING[pitch.id]) {
@@ -732,11 +984,18 @@
             allMarkerLabels = [];
         }
 
-        allMarkerLabels.forEach(function(label, idx) {
+        allMarkerLabels.forEach(function(label) {
             const m = new THREE.Mesh(sphereGeo, sphereMat);
             m.userData.label = label;
             modelGroup.add(m);
             markerMeshes.push(m);
+        });
+
+        allMarkerLabels.forEach(function(label) {
+            const m = new THREE.Mesh(sphereGeo, meanSphereMat);
+            m.userData.label = label;
+            modelGroup.add(m);
+            meanMarkerMeshes.push(m);
         });
 
         const markerIndex = {};
@@ -744,7 +1003,15 @@
             markerIndex[label] = idx;
         });
 
-        const lineMat = new THREE.LineBasicMaterial({ color: 0xcccccc, opacity: 0.6, transparent: true });
+        pcaMotionLineMat = new THREE.LineBasicMaterial({ color: 0xdba86f, opacity: 0.8, transparent: true });
+        averageMotionLineMat = new THREE.LineBasicMaterial({ color: 0x67d5ff, opacity: 0.8, transparent: true });
+        realMotionLineMat = new THREE.LineBasicMaterial({ color: 0x67d5ff, opacity: 0.8, transparent: true });
+        reconstructionLineMat = new THREE.LineBasicMaterial({ color: 0xdba86f, opacity: 0.8, transparent: true });
+        
+        // Use PCA line materials by default
+        const lineMat = pcaMotionLineMat;
+        const meanLineMat = averageMotionLineMat;
+        
         connections.forEach(function([a, b]) {
             const ia = markerIndex[a];
             const ib = markerIndex[b];
@@ -754,18 +1021,45 @@
                 const l = new THREE.Line(g, lineMat);
                 modelGroup.add(l);
                 skeletonLines.push({ line: l, i: ia, j: ib });
+
+                const mg = new THREE.BufferGeometry();
+                mg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
+                const ml = new THREE.Line(mg, meanLineMat);
+                modelGroup.add(ml);
+                meanSkeletonLines.push({ line: ml, i: ia, j: ib });
             }
         });
 
         const rStart = document.getElementById("range-start");
         const rEnd = document.getElementById("range-end");
+        const frameSlider = document.getElementById("frame-slider");
         const n_frames = pcaResult ? pcaResult.n_frames : 100;
         rStart.max = rEnd.max = n_frames - 1;
+        frameSlider.max = n_frames - 1;
         rEnd.value = n_frames - 1;
         frameEnd = n_frames - 1;
         updateRange();
 
         document.getElementById('loading').style.display = 'none';
+        
+        // Add frame slider event listeners
+        frameSlider.addEventListener('mousedown', function() {
+            this.dataset.isDragging = 'true';
+            isPaused = true;
+            updatePauseButton();
+        });
+        frameSlider.addEventListener('mouseup', function() {
+            delete this.dataset.isDragging;
+        });
+        frameSlider.addEventListener('touchstart', function() {
+            this.dataset.isDragging = 'true';
+            isPaused = true;
+            updatePauseButton();
+        });
+        frameSlider.addEventListener('touchend', function() {
+            delete this.dataset.isDragging;
+        });
+        
         animate(0);
     }
 
@@ -794,56 +1088,143 @@
         });
     }
 
-    function reconstructReal(frameIdx) {
-        if (!currentRealPitch || currentRealPitch.frames[frameIdx] === undefined) return;
-
-        const frameData = currentRealPitch.frames[frameIdx];
-        
-        markerMeshes.forEach(function(m) {
-            m.position.set(0, 0, 0);
-            m.visible = false;
-        });
-
-        Object.entries(frameData).forEach(function([markerLabel, pos]) {
-            for (let i = 0; i < markerMeshes.length; i++) {
-                if (markerMeshes[i].userData.label === markerLabel) {
-                    markerMeshes[i].position.set(pos.x, pos.y, pos.z);
-                    markerMeshes[i].visible = true;
-                    break;
+    function reconstructMean(frameIdx) {
+        if (!meanMotion || !showAverageMotion) {
+            meanMarkerMeshes.forEach(function(m) { m.visible = false; });
+            meanSkeletonLines.forEach(function(s) { s.line.visible = false; });
+            return;
+        }
+        featureMap.forEach(function(feat, fIdx) {
+            if (feat.frame === frameIdx) {
+                const m = meanMarkerMeshes[feat.markerIndex];
+                if (m) {
+                    m.position[feat.axis] = meanMotion[fIdx];
+                    m.visible = true;
                 }
             }
         });
-
-        skeletonLines.forEach(function(s) {
-            const a = markerMeshes[s.i];
-            const b = markerMeshes[s.j];
-            if (a.visible && b.visible) {
-                const pos = s.line.geometry.attributes.position.array;
-                pos[0] = a.position.x; pos[1] = a.position.y; pos[2] = a.position.z;
-                pos[3] = b.position.x; pos[4] = b.position.y; pos[5] = b.position.z;
-                s.line.geometry.attributes.position.needsUpdate = true;
-                s.line.visible = true;
-            } else {
-                s.line.visible = false;
-            }
+        meanSkeletonLines.forEach(function(s) {
+            const pos = s.line.geometry.attributes.position.array;
+            const a = meanMarkerMeshes[s.i].position, b = meanMarkerMeshes[s.j].position;
+            pos[0] = a.x; pos[1] = a.y; pos[2] = a.z;
+            pos[3] = b.x; pos[4] = b.y; pos[5] = b.z;
+            s.line.geometry.attributes.position.needsUpdate = true;
+            s.line.visible = a.visible && b.visible;
         });
+    }
+
+    function reconstructReal(frameIdx) {
+        if (!currentRealPitch || currentRealPitch.frames[frameIdx] === undefined) return;
+        const frameData = currentRealPitch.frames[frameIdx];
+        
+        if (!showRealMotion) {
+            markerMeshes.forEach(function(m) { m.visible = false; });
+            skeletonLines.forEach(function(s) { s.line.visible = false; });
+        } else {
+            markerMeshes.forEach(function(m) {
+                m.position.set(0, 0, 0);
+                m.visible = false;
+            });
+            Object.entries(frameData).forEach(function([markerLabel, pos]) {
+                for (let i = 0; i < markerMeshes.length; i++) {
+                    if (markerMeshes[i].userData.label === markerLabel) {
+                        markerMeshes[i].position.set(pos.x, pos.y, pos.z);
+                        markerMeshes[i].visible = true;
+                        break;
+                    }
+                }
+            });
+            skeletonLines.forEach(function(s) {
+                const a = markerMeshes[s.i];
+                const b = markerMeshes[s.j];
+                if (a.visible && b.visible) {
+                    const pos = s.line.geometry.attributes.position.array;
+                    pos[0] = a.position.x; pos[1] = a.position.y; pos[2] = a.position.z;
+                    pos[3] = b.position.x; pos[4] = b.position.y; pos[5] = b.position.z;
+                    s.line.geometry.attributes.position.needsUpdate = true;
+                    s.line.visible = true;
+                } else {
+                    s.line.visible = false;
+                }
+            });
+        }
+
+        if (showReconstruction && PCA_SCORES && PCA && currentRealPitch) {
+            let pcaScoreEntry = PCA_SCORES.find(function(entry) { return entry.id === currentRealPitch.id; });
+            if (!pcaScoreEntry && currentRealPitch.id) {
+                const parts = currentRealPitch.id.split('_');
+                const paddedId = parts[0] + '_' + parts[1] + '_' + parts[2].padStart(3, '0');
+                pcaScoreEntry = PCA_SCORES.find(function(entry) { return entry.id === paddedId; });
+            }
+
+            if (pcaScoreEntry) {
+                const { X_mean, V, Lambda } = PCA;
+                const pc_scores = pcaScoreEntry.pc_scores;
+                const currentX = new Array(X_mean.length);
+                
+                meanMarkerMeshes.forEach(function(m) { m.visible = false; });
+                
+                for (let i = 0; i < X_mean.length; i++) {
+                    let val = X_mean[i];
+                    for (let k = 0; k < pc_scores.length; k++) {
+                        val += pc_scores[k] * Math.sqrt(Lambda[k]) * V[i][k];
+                    }
+                    currentX[i] = val;
+                }
+
+                featureMap.forEach(function(feat, fIdx) {
+                    if (feat.frame === frameIdx) {
+                        const m = meanMarkerMeshes[feat.markerIndex];
+                        if (m) {
+                            m.position[feat.axis] = currentX[fIdx];
+                            m.visible = true;
+                        }
+                    }
+                });
+
+                meanSkeletonLines.forEach(function(s) {
+                    const pos = s.line.geometry.attributes.position.array;
+                    const a = meanMarkerMeshes[s.i].position, b = meanMarkerMeshes[s.j].position;
+                    pos[0] = a.x; pos[1] = a.y; pos[2] = a.z;
+                    pos[3] = b.x; pos[4] = b.y; pos[5] = b.z;
+                    s.line.geometry.attributes.position.needsUpdate = true;
+                    s.line.visible = a.visible && b.visible;
+                });
+
+                displayPCWeights(pc_scores);
+            }
+        } else {
+            meanMarkerMeshes.forEach(function(m) { m.visible = false; });
+            meanSkeletonLines.forEach(function(s) { s.line.visible = false; });
+        }
+    }
+
+    function displayPCWeights(pc_scores) {
+        const pcWeightsDiv = document.getElementById('pc-weights-display');
+        if (!pcWeightsDiv) return;
+
+        let html = '<div style="font-size: 8px; color: #8a9bab; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.3px;">PC Weights:</div>';
+        pc_scores.forEach(function(score, idx) {
+            const color = score > 0.1 ? '#7dd157' : score < -0.1 ? '#ff7675' : '#a0a0a0';
+            html += '<div class="pc-weight-item"><span>PC' + (idx+1) + '</span><span style="color: ' + color + ';">' + score.toFixed(3) + '</span></div>';
+        });
+        pcWeightsDiv.innerHTML = html;
     }
 
     function animate(time) {
         requestAnimationFrame(animate);
         if (time - lastFrameTime > (1000 / fps)) {
             const frameToShow = Math.min(frame, mode === 'pca' ? PCA.n_frames - 1 : (currentRealPitch ? currentRealPitch.max_frames - 1 : 0));
-            
-            // Update frame counter
             document.getElementById('frame-counter').textContent = frameToShow;
-            
+            document.getElementById('frame-slider').value = frameToShow;
+
             if (mode === 'pca') {
+                reconstructMean(frameToShow);
                 reconstructPCA(frameToShow);
             } else {
                 reconstructReal(frameToShow);
             }
 
-            // Only advance frame if not paused
             if (!isPaused) {
                 frame = (frame >= frameEnd) ? frameStart : frame + 1;
             }

@@ -1,5 +1,4 @@
 data/c3d_files/
 *.parquet
-*.joblib
 *.mp4
 *.json
