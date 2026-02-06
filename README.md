@@ -1,15 +1,115 @@
 # Baseball Pitching Motion Analysis
 
-## Data Overview
+## Purpose
 
-`pitching_data.parquet` - Raw 3D motion capture data where each row represents a single frame of a pitcher's motion. Columns include: 'userID', 'sessionID', 'height', 'weight', 'pitchNum', 'pitchType', 'pitchSpeed', 'frame', 'markerID', 'x', 'y', 'z'
+This project performs Principal Component Analysis (PCA) on 3D motion capture data of baseball pitchers to decompose complex pitching motions into fundamental movement patterns. It includes an interactive 3D visualization tool for exploring pitching biomechanics.
 
-`pitch_marker_mapping.json` - JSON mapping that associates markerID numbers with descriptive labels for anatomical body part locations (e.g., "Left_Shoulder", "Right_Elbow"). Organized by pitch_key (composite key of userID_sessionID_pitchNum).
+## File Structure
 
-`poi_metrics.csv` - Points of interest metrics data containing columns: 'session_pitch', 'session', 'p_throws', 'pitch_speed_mph'. Used to extract pitcher handedness (p_throws: "L" or "R") for each session.
+```
+.
+├── data/
+│   ├── c3d_files/                    # Raw C3D motion capture files
+│   ├── poi_metrics.csv               # Pitcher metrics (handedness, speed)
+│   └── (generated files - parquet, json)
+├── images/                           # Output plots
+├── data.py                           
+├── preprocessing.py                  
+├── reformat.py                       
+├── pca.py                            
+├── index.html                        
+└── requirements.txt
+```
 
-`cleaned_data.parquet` - Processed motion capture data after cleaning and standardization. All left-handed pitchers are mirrored about the y-axis so all pitchers are normalized as right-handed. Only includes markers that appear in every pitch within a session. Columns: 'userID', 'sessionID', 'height', 'weight', 'pitchNum', 'pitchType', 'pitchSpeed', 'frame', 'markerID', 'x', 'y', 'z', 'p_throws'
+## File Descriptions
 
-`normalized_data.parquet` - Final processed dataset with frame normalization applied. Each marker trajectory within a pitch is interpolated to a standard 101 frames (0-100 normalized frame scale). Columns: 'userID', 'sessionID', 'height', 'weight', 'pitchNum', 'pitchType', 'pitchSpeed', 'frame_norm', 'x', 'y', 'z', 'markerID', 'p_throws'
+### Python Scripts
 
-`df` in `pca.ipynb` - Wide-format feature matrix prepared for machine learning and dimensionality reduction. Each row represents a single pitch, with one row per unique combination of userID, sessionID, pitchNum, height, weight, pitchType, pitchSpeed, and p_throws. Features are constructed by pivoting the normalized motion data into columns with naming convention {axis}_{markerID}_{frame_norm} (e.g., x_C7_0, y_LeftShoulder_50, z_RightElbow_100), where axis is x, y, or z coordinate, markerID is the body part label, and frame_norm is the normalized frame number (0-100). This format enables direct input to PCA and other statistical modeling techniques.
+**data.py**
+- Reads all C3D motion capture files from `./data/c3d_files/`
+- Extracts 3D marker positions (x, y, z) for each frame
+- Converts pitch speed to mph
+- Outputs: `pitching_data.parquet`, `pitch_marker_mapping.json`
+
+**preprocessing.py**
+- Cleans and validates motion data
+- Mirrors left-handed pitchers about y-axis (normalizes all to right-handed)
+- Removes markers inconsistent across pitches within a session
+- Interpolates frame counts to exactly 101 frames per pitch (0-100 normalized scale)
+- Centers pitches on y-axis
+- Outputs: `cleaned_data.parquet`, `normalized_data.parquet`
+
+**reformat.py**
+- Pivots data from long format (one row per frame) to wide format (one row per pitch)
+- Creates feature matrix where each column is `{axis}_{markerID}_{frame}` (e.g., `x_LeftShoulder_50`)
+- Generates JSON file for visualization with real pitch motions
+- Outputs: `pca_ready.parquet`, `real_data.json`
+
+**pca.py**
+- Centers data by subtracting mean motion from all pitches
+- Computes covariance matrix and performs eigenvalue decomposition
+- Selects principal components explaining ≥80% of variance
+- Calculates PC scores for each pitch
+- Generates two plots: PC-speed correlation and reconstruction quality
+- Outputs: `pca_data.json`, `pca_scores.json`, plots
+
+### HTML Interface
+
+**index.html**
+- Real-time 3D visualization using Three.js
+- Two operating modes:
+  - **PCA Mode:** Adjust slider controls for each principal component (-4σ to +4σ) to generate synthetic pitching motions
+  - **Real Mode:** Select actual pitcher and pitch data, compare real motion against PCA reconstruction
+- Interactive controls: play/pause, frame slider, FPS adjustment, camera rotation, frame range selection
+- Color coding: cyan for real motion, gold for PCA-generated/reconstructed motion
+
+## Data Explanation
+
+**Input:** C3D files contain 3D motion capture with anatomical markers (head, torso, arms, legs) tracked frame-by-frame.
+
+**Processing:**
+1. Extract marker positions for each frame
+2. Normalize left-handed pitchers through axis mirroring
+3. Interpolate all pitches to 101-frame standard
+4. Build feature matrix combining all spatial coordinates across time
+5. Apply PCA to identify dominant movement patterns
+
+**Output:** 
+- Principal components representing fundamental pitching patterns
+- PC scores showing how each pitch decomposes across these patterns
+- Visualization data enabling real-time motion synthesis and analysis
+
+## How to Run
+
+1. **Download C3D data**
+   - Visit [openbiomechanics.org](https://openbiomechanics.org)
+   - Download baseball pitching motion capture files
+   - Place all `.c3d` files in `./data/c3d_files/`
+
+2. **Run the pipeline (in order)**
+   ```bash
+   pip install -r requirements.txt
+   python data.py          
+   python preprocessing.py 
+   python reformat.py      
+   python pca.py           
+   ```
+
+3. **View interactive visualization**
+   ```bash
+   python -m http.server 8000
+   ```
+   Open `http://localhost:8000/index.html`
+
+## Utility of the HTML Visualization
+
+The interactive visualization enables:
+- **Real-time motion synthesis** by manipulating principal components as continuous sliders
+- **Biomechanical exploration** by observing how specific PCs affect arm angle, body rotation, stride length
+- **Pitch comparison** showing real pitcher motions overlaid with PCA reconstructions to assess how well the components capture authentic mechanics
+- **Multi-perspective analysis** with camera controls (front, side, back, 3D) for understanding motion from different angles
+- **Speed control** to slow down or speed up playback for detailed motion analysis
+
+## Conclusion
+
+This project provides a complete pipeline for analyzing baseball pitching biomechanics through dimensionality reduction and interactive visualization. By decomposing complex 3D motion data into principal components, it reveals the underlying patterns that characterize pitching performance. The web-based visualization tool makes this analysis accessible and intuitive, allowing exploration of both real pitcher data and synthetic motions generated by manipulating fundamental movement patterns. This enables deeper understanding of pitching mechanics and serves as a tool for coaching, player development, and biomechanical research.

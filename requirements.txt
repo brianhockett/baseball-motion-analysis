@@ -1,0 +1,6 @@
+ezc3d
+polars
+pandas
+numpy
+scipy
+matplotlib
