@@ -189,48 +189,89 @@ print("Creating and Saving PC - Pitch Speed Correlation Plot")
 # Get PC column names (all columns from index 4 onwards)
 pc_columns = pca_df.columns[4:]
 
-# Calculate correlation of each PC with pitchSpeed
-correlations = []
-for col in pc_columns:
-    corr = pca_df.select(pl.corr(col, 'pitchSpeed')).item()
-    correlations.append(corr)
+# Bootstrapping Parameters
+N_BOOTSTRAP = 5000
+CI = 95
+alpha = (100 - CI) / 2
 
-# Create subplots
-fig, ax = plt.subplots(figsize = (12, 7))
+# Random number generator
+rng = np.random.default_rng(42)
+n_rows = len(pca_df)
 
-# Color bars based on positive/negative correlation
-colors = ['#1f2f45', '#1f2f45']
+# Dictionary to hold bootstrap correlation results for each PC
+boot_corrs = {col: [] for col in pc_columns}
 
-bars = ax.bar(range(len(pc_columns)), correlations, color=colors, alpha = 0.8, edgecolor = 'black', linewidth = 1.2)
+# Bootstrap sampling and correlation calculation
+for _ in range(N_BOOTSTRAP):
+    idx = rng.integers(0, n_rows, size=n_rows)
+    sample = pca_df[idx]
+    for col in pc_columns:
+        corr = sample.select(pl.corr(col, 'pitchSpeed')).item()
+        boot_corrs[col].append(corr)
 
-# Add value labels on top of bars
-for i, (bar, corr) in enumerate(zip(bars, correlations)):
-    height = bar.get_height()
-    ax.text(bar.get_x() + bar.get_width()/2., height + 0.007 if height > 0 else height - 0.007,
-            f'{corr:.3f}',
-            ha = 'center', va = 'bottom' if height > 0 else 'top',
-            fontsize = 11, fontweight = 'bold', color = '#333333')
+# Calculate means and confidence intervals for each PC's correlation with pitch speed
+means      = [np.mean(boot_corrs[col]) for col in pc_columns]
+lowers     = [np.percentile(boot_corrs[col], alpha) for col in pc_columns]
+uppers     = [np.percentile(boot_corrs[col], 100 - alpha) for col in pc_columns]
+errors_neg = [m - l for m, l in zip(means, lowers)]
+errors_pos = [u - m for m, u in zip(means, uppers)]
+
+# Initialize the plot
+fig, ax = plt.subplots(figsize=(12, 7))
+
+# X positions for each PC
+x = list(range(len(pc_columns)))
+
+# Error bars
+ax.errorbar(x, means,
+            yerr=[errors_neg, errors_pos],
+            fmt='none',
+            color='#C9A535',
+            linewidth=2,
+            capsize=6,
+            capthick=2,
+            zorder=2,
+            label=f'{CI}% Bootstrap CI')
+
+# Mean points
+ax.scatter(x, means,
+           color='#1f2f45',
+           s=80,
+           zorder=3,
+           edgecolors='black',
+           linewidths=0.8,
+           label='Bootstrap mean')
+
+# Labels to the right of each mean point
+for i, mean in enumerate(means):
+    ax.text(i + 0.15, mean,
+            f'{mean:.3f}',
+            ha='left',
+            va='center',
+            fontsize=10, fontweight='bold', color='#333333')
 
 # Styling
-ax.set_xlabel('Principal Component', fontsize = 13, fontweight='bold')
-ax.set_ylabel('Correlation with Pitch Speed', fontsize = 13, fontweight='bold')
-ax.set_title('PCA Component Correlation with Pitch Speed', fontsize = 15, fontweight = 'bold', pad = 20)
-ax.set_xticks(range(len(pc_columns)))
-ax.set_xticklabels([col.replace('_Score', '') for col in pc_columns], fontsize = 11)
-ax.axhline(y = 0, color = 'black', linestyle = '-', linewidth = 1.5)
-ax.grid(axis = 'y', alpha = 0.5, linestyle = '--', linewidth = 0.7)
-ax.set_ylim(min(correlations) - 0.15, max(correlations) + 0.15)
+ax.set_xlabel('Principal Component', fontsize=13, fontweight='bold')
+ax.set_ylabel('Correlation with Pitch Speed', fontsize=13, fontweight='bold')
+ax.set_title(f'PCA Component Correlation with Pitch Speed\n'
+             f'(Bootstrapped Means ± {CI}% CI, n = {N_BOOTSTRAP})',
+             fontsize=15, fontweight='bold', pad=20)
+ax.set_xticks(x)
+ax.set_xticklabels([col.replace('_Score', '') for col in pc_columns], fontsize=11)
+ax.axhline(y=0, color='black', linestyle='-', linewidth=1.5)
+ax.grid(axis='y', alpha=0.5, linestyle='--', linewidth=0.7, zorder=1)
+ax.set_ylim(min(lowers) - 0.15, max(uppers) + 0.15)
+ax.legend(fontsize=11, loc='upper right')
 
-# Remove top and right spines
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 ax.spines['left'].set_linewidth(1.5)
 ax.spines['bottom'].set_linewidth(1.5)
 
 plt.tight_layout()
-plt.savefig('./images/pc_speed_correlation.png', dpi = 300, bbox_inches = 'tight')
+plt.savefig('./images/pc_speed_correlation_bootstrapped.png', dpi=300, bbox_inches='tight')
 
-print("Creating and Saving PCA Reconstruction  Plot")
+print("Creating and Saving PCA Reconstruction Plot")
 
 scores_all = pca_df.select(pl.col("^PC.*_Score$")).to_numpy()
 reconstructed_all = X_mean.T + (scores_all * np.sqrt(Lambda)) @ V_components.T
